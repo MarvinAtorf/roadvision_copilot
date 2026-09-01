@@ -1,0 +1,43 @@
+line-length = 100
+target-version = "py312"
+
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+    "data",
+    "chroma",
+]
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes (unused imports/vars, undefined names, etc.)
+    "I",      # isort (Import-Sortierung)
+    "UP",     # pyupgrade (moderne Python-Syntax erzwingen)
+    "B",      # flake8-bugbear (häufige Bugs/Antipatterns)
+    "C4",     # flake8-comprehensions (unnötige list()/dict()-Konstrukte)
+    "SIM",    # flake8-simplify (unnötig komplexer Code)
+    "N",      # pep8-naming (Namenskonventionen)
+    "ASYNC",  # flake8-async (wichtig bei FastAPI async-Endpoints)
+    "RUF",    # Ruff-eigene Regeln
+    "PTH",    # flake8-use-pathlib (os.path → pathlib)
+    "PIE",    # flake8-pie (diverse kleine Verbesserungen)
+]
+
+ignore = [
+    "E501",   # Zeilenlänge – wird von ruff-format ohnehin gehandhabt
+]
+
+# pro Datei-Muster Regeln ausnehmen
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # ungenutzte Imports in __init__.py sind oft bewusst (Re-Exports)
+
+[lint.isort]
+known-first-party = ["backend", "frontend"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

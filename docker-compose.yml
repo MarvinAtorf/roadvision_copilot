@@ -1,0 +1,83 @@
+services:
+
+  # FastAPI backend: hosts the YOLOv11 + ByteTrack pipeline, LangGraph/LangChain
+  # orchestration, and the report/RAG endpoints. All of those are Python libraries
+  # used inside this service, not separate containers.
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: roadvision-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    depends_on:
+      - chromadb
+    networks:
+      - roadvision-network
+    # Uncomment to give the container GPU access for faster YOLOv11 inference
+    # (requires the NVIDIA Container Toolkit on the host):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Streamlit dashboard: talks to the API, holds no pipeline logic itself.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: roadvision-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=poll
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - api
+    networks:
+      - roadvision-network
+
+  # Vector database for the RAG pipeline (traffic regulations, reference docs).
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: roadvision-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    networks:
+      - roadvision-network
+
+  # Optional: self-hosted Llama 3 instead of the OpenAI API.
+  # Needs GPU access to be practically usable - see Ollama's Docker docs.
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: roadvision-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+  #   networks:
+  #     - roadvision-network
+
+networks:
+  roadvision-network:
+    driver: bridge
+
+volumes:
+  chromadb-data:
+  # ollama-data:

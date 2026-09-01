@@ -1,0 +1,22 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+
+# LLM / RAG
+anthropic
+llama-index
+llama-index-vector-stores-chroma
+chromadb
+rank-bm25
+
+# CV-Pipeline
+ultralytics
+opencv-python-headless
+numpy
+
+# Reports / Storage
+reportlab
+sqlalchemy
+
+python-dotenv
