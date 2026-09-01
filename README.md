@@ -43,7 +43,6 @@ RoadVision Copilot processes traffic footage through a CV pipeline (YOLO-based s
 - **Orchestration:** Docker Compose
 - **LLMs:** Claude Haiku (sign lookups), Claude Sonnet (report generation)
 - **RAG:** LlamaIndex, ChromaDB (two-collection setup: `signs_json` + `stvo_full`), custom BM25 retriever (`rank_bm25`) for hybrid search
-- **Storage:** SQLite
 - **Linting/Formatting:** Ruff (enforced via pre-commit)
 
 ## Project Structure
@@ -127,9 +126,6 @@ Set up pre-commit hooks once:
 pre-commit install
 ```
 
-## Roadmap
-
-- [ ] Migrate `/chat` endpoint conditional logic to a proper LangGraph `conditional_edge` implementation
 
 ## License
 
