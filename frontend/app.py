@@ -18,11 +18,17 @@ with st.sidebar:
         response.raise_for_status()
         health = response.json()
 
-        if health.get("chroma_db") == "healthy":
+        api_ok = health.get("api") == "ok"
+        chroma_ok = health.get("chroma_db") == "healthy"
+
+        if api_ok:
             st.success("API: ok")
-            st.success("ChromaDB: healthy")
         else:
-            st.success("API: ok")
+            st.warning(f"API: {health.get('api', 'unknown')}")
+
+        if chroma_ok:
+            st.success("ChromaDB: ok")
+        else:
             st.warning("ChromaDB: degraded")
 
     except requests.exceptions.RequestException:
