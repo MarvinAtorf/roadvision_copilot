@@ -1,0 +1,260 @@
+[
+  {
+    "open_cv_id": 0,
+    "stvo_id": 274,
+    "value": 20,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 1,
+    "stvo_id": 274,
+    "value": 30,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 2,
+    "stvo_id": 274,
+    "value": 50,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 3,
+    "stvo_id": 274,
+    "value": 60,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 4,
+    "stvo_id": 274,
+    "value": 70,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 5,
+    "stvo_id": 274,
+    "value": 80,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 6,
+    "stvo_id": 278,
+    "value": 80,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 7,
+    "stvo_id": 274,
+    "value": 100,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 8,
+    "stvo_id": 274,
+    "value": 120,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 9,
+    "stvo_id": 276,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 10,
+    "stvo_id": 277,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 11,
+    "stvo_id": 301,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 12,
+    "stvo_id": 306,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 13,
+    "stvo_id": 205,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 14,
+    "stvo_id": 206,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 15,
+    "stvo_id": 250,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 16,
+    "stvo_id": 253,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 17,
+    "stvo_id": 267,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 18,
+    "stvo_id": 101,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 19,
+    "stvo_id": 103,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 20,
+    "stvo_id": 103,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 21,
+    "stvo_id": 105,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 22,
+    "stvo_id": 112,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 23,
+    "stvo_id": 114,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 24,
+    "stvo_id": 120,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 25,
+    "stvo_id": 123,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 26,
+    "stvo_id": 131,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 27,
+    "stvo_id": 133,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 28,
+    "stvo_id": 136,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 29,
+    "stvo_id": 138,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 30,
+    "stvo_id": 113,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 31,
+    "stvo_id": 142,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 32,
+    "stvo_id": 282,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 33,
+    "stvo_id": 209,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 34,
+    "stvo_id": 211,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 35,
+    "stvo_id": 209,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 36,
+    "stvo_id": 214,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 37,
+    "stvo_id": 214,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 38,
+    "stvo_id": 222,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 39,
+    "stvo_id": 222,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 40,
+    "stvo_id": 215,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 41,
+    "stvo_id": 280,
+    "value": null,
+    "time_stamp": null
+  },
+  {
+    "open_cv_id": 42,
+    "stvo_id": 281,
+    "value": null,
+    "time_stamp": null
+  }
+]
