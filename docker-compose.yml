@@ -18,7 +18,6 @@ services:
       - CHROMA_PORT=8000
     volumes:
       - ./backend:/app
-      - ./data:/app/data
     depends_on:
       - chromadb
     networks:

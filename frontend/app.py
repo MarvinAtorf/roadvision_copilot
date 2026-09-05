@@ -30,7 +30,7 @@ with st.sidebar:
         health = response.json()
 
         api_ok = health.get("api") == "ok"
-        chroma_ok = health.get("chroma_db") == "healthy"
+        chroma_ok = health.get("chroma_db") == "ok"
 
         if api_ok:
             st.success("API: ok")
