@@ -11,7 +11,7 @@ st.markdown(
     """
     <style>
         .block-container {
-            padding-top: 1.2rem;
+            padding-top: 4rem;
             padding-bottom: 1rem;
             padding-left: 2rem;
             padding-right: 2rem;
@@ -29,18 +29,12 @@ with st.sidebar:
         response.raise_for_status()
         health = response.json()
 
-        api_ok = health.get("api") == "ok"
-        chroma_ok = health.get("chroma_db") == "ok"
-
-        if api_ok:
+        if health.get("chroma_db") == "ok":
             st.success("API: ok")
-        else:
-            st.warning(f"API: {health.get('api', 'unknown')}")
-
-        if chroma_ok:
             st.success("ChromaDB: ok")
         else:
-            st.warning("ChromaDB: degraded")
+            st.success("API: ok")
+            st.warning("ChromaDB: unreachable")
 
         st.json(health)
 
@@ -54,9 +48,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- Zwei Container nebeneinander: 80/20 ---
-col1, col2 = st.columns([4, 2])
+col1, col2 = st.columns([4, 1])
 
-with col1, st.container(border=True, height=770):
+with col1, st.container(border=True, height=700):
     uploaded_video = st.file_uploader("Video hochladen", type=["mp4", "mov", "avi"])
     if uploaded_video is not None:
         st.video(uploaded_video)
@@ -64,15 +58,15 @@ with col1, st.container(border=True, height=770):
         st.info("Noch kein Video hochgeladen.")
     st.button("Generate report")
 
-with col2, st.container(border=True, height=770):
+with col2, st.container(border=True, height=700):
     st.subheader("Chatbot")
-    chat_box = st.container(height=540)
+    chat_box = st.container(height=450)
     with chat_box:
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-    if prompt := st.chat_input("Frag zum erkannten Schild..."):
+    if prompt := st.chat_input("Ask something about the video (signs, vehicles, ...)"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with chat_box, st.chat_message("user"):
             st.markdown(prompt)
@@ -80,7 +74,7 @@ with col2, st.container(border=True, height=770):
         try:
             response = requests.post(
                 f"{API_BASE_URL}/chat",
-                json={"message": prompt},
+                json={"messages": st.session_state.messages},
                 timeout=15,
             )
             response.raise_for_status()
