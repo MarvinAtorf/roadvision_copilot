@@ -18,9 +18,9 @@ _mapping_by_id = _load_mapping()
 
 
 def lookup(open_cv_id: int) -> dict | None:
-    """Gibt den Mapping-Eintrag (stvo_id, value, time_stamp) zu einer open_cv_id zurück.
+    """Returns the mapping entry (stvo_id, value, time_stamp) for a given open_cv_id.
 
-    Returns None, wenn die open_cv_id nicht im Mapping existiert.
+    Returns None if the open_cv_id does not exist in the mapping.
     """
     return _mapping_by_id.get(open_cv_id)
 
