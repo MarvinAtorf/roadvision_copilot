@@ -8,5 +8,5 @@ def health(request: Request):
     service_status = request.app.state.service_status
     return {
         "api": "ok",
-        "chroma_db": "ok" if service_status["chromadb"] == "ok" else "degraded",
+        "chroma_db": service_status["chromadb"],
     }
