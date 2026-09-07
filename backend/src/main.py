@@ -4,7 +4,7 @@ import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from routes import health
+from routes import chat, health
 
 logger = logging.getLogger("roadvision")
 
@@ -34,3 +34,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(health.router)
+app.include_router(chat.router)
