@@ -1,0 +1,60 @@
+{
+    "video_metadata": {
+        "video_path": "backend/pipelines/videos/raw_videos/63621-506830674.mp4",
+        "fps": 30.0,
+        "frame_width": 1920,
+        "frame_height": 1080,
+        "total_frames": 300,
+        "frames_processed": 300,
+        "duration_seconds": 10.0
+    },
+    "vehicle_analysis": {
+        "total_unique_vehicles": 12,
+        "max_active_vehicles": 5,
+        "vehicle_counts": {"bicycle": 0, "car": 8, "motorbike": 1, "bus": 1, "truck": 2}
+    },
+    "traffic_light_analysis": {
+        "total_unique_traffic_lights": 2,
+        "max_visible_simultaneously": 2,
+        "detections": [
+            {"id": 1, "first_seen_seconds": 0.0, "last_seen_seconds": 9.8},
+            {"id": 2, "first_seen_seconds": 1.4, "last_seen_seconds": 10.0}
+        ]
+    },
+    "traffic_sign_analysis": {
+        "status": "not_implemented_in_mvp",
+        "total_unique_signs_detected": 0,
+        "detections": []
+    },
+    "timeline": [
+        {
+            "timestamp_seconds": 0.0,
+            "frame_number": 0,
+            "traffic_density": {"active_vehicles": 2},
+            "vehicles": {
+                "active_count": 2,
+                "detections": [
+                    {
+                        "id": 1,
+                        "class": "car",
+                        "confidence": 0.875,
+                        "bbox": [250.5, 400.2, 310.0, 480.1]
+                    },
+                    {
+                        "id": 2,
+                        "class": "truck",
+                        "confidence": 0.912,
+                        "bbox": [500.0, 350.0, 620.8, 510.4]
+                    }
+                ]
+            },
+            "traffic_lights": {
+                "visible_count": 1,
+                "detections": [
+                    {"id": 1, "confidence": 0.823, "bbox": [800.1, 150.0, 830.5, 210.0]}
+                ]
+            },
+            "traffic_signs": {"detections": []}
+        }
+    ]
+}
