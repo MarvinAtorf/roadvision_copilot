@@ -48,14 +48,14 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- Zwei Container nebeneinander: 80/20 ---
-col1, col2 = st.columns([4, 1])
+col1, col2 = st.columns([4, 3])
 
 with col1, st.container(border=True, height=700):
-    uploaded_video = st.file_uploader("Video hochladen", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("upload video", type=["mp4", "mov", "avi"])
     if uploaded_video is not None:
         st.video(uploaded_video)
     else:
-        st.info("Noch kein Video hochgeladen.")
+        st.info("no video uploaded yet.")
     st.button("Generate report")
 
 with col2, st.container(border=True, height=700):
@@ -78,9 +78,9 @@ with col2, st.container(border=True, height=700):
                 timeout=15,
             )
             response.raise_for_status()
-            answer = response.json().get("answer", "Keine Antwort erhalten.")
+            answer = response.json().get("answer", "no answer received.")
         except requests.exceptions.RequestException:
-            answer = "⚠️ Backend nicht erreichbar."
+            answer = "⚠️ Backend not reachable."
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
         with chat_box, st.chat_message("assistant"):
