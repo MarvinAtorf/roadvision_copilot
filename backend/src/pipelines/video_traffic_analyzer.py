@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 
 import cv2
@@ -38,6 +39,7 @@ OUTPUT_JSON = (
 )
 
 MODEL_PATH = PROJECT_ROOT / "backend" / "model_weights" / "yolo11m.pt"
+model = YOLO(str(MODEL_PATH))
 
 
 # ============================================================
@@ -634,14 +636,8 @@ def main():
         # YOLO TRACK
         # ----------------------------------------------------
 
-        results = model.track(
-            frame,
-            persist=True,
-            classes=TRACKED_CLASSES,
-            conf=CONFIDENCE_THRESHOLD,
-            tracker="bytetrack.yaml",
-            verbose=False,
-        )
+       # Run YOLO inference on the current frame
+        results = model(frame, classes=TRACKED_CLASSES, verbose=False)
 
         raw_detections = []
 
@@ -1343,6 +1339,72 @@ def main():
 
     print("=" * 70)
 
+# ============================================================
+# STREAMLIT UPLOADER
+# ============================================================
+def run_video_analysis(input_video_path: str, output_video_path: str) -> dict:
+    """Main entry point for processing traffic video using full pipeline.
+
+    Loads custom model weights, applies vehicle tracking & counting logic,
+    and saves the annotated H.264 video.
+    """
+    input_path = Path(input_video_path)
+    output_path = Path(output_video_path)
+
+    # Ensure output directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load YOLO model with custom weights
+    model = YOLO(str(MODEL_PATH))
+
+    # Provide a thin compatibility wrapper for callers expecting
+    # a `process_video` function. This updates module-level
+    # INPUT/OUTPUT paths, invokes the main pipeline, and returns
+    # the parsed JSON analysis.
+    def process_video(
+        input_path: str,
+        output_path: str,
+        model=None,
+        tracked_classes=None,
+        confidence_threshold: float = 0.25,
+    ) -> dict:
+
+        # Update global paths used by main()
+        global INPUT_VIDEO, OUTPUT_VIDEO, OUTPUT_JSON
+
+        INPUT_VIDEO = Path(input_path)
+        OUTPUT_VIDEO = Path(output_path)
+
+        # Ensure output json path next to output video
+        OUTPUT_JSON = OUTPUT_VIDEO.with_suffix(".json")
+
+        # Run the existing main pipeline which uses module globals
+        main()
+
+        # Load and return the generated JSON if available
+        if OUTPUT_JSON.exists():
+            try:
+                with OUTPUT_JSON.open("r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+
+        return {}
+
+    results = process_video(
+        input_path=str(input_path),
+        output_path=str(output_path),
+        model=model,
+        tracked_classes=TRACKED_CLASSES,
+        confidence_threshold=CONFIDENCE_THRESHOLD,
+    )
+
+    return {
+        "status": "success",
+        "input_video": str(input_path),
+        "output_video": str(output_path),
+        "data": results,
+    }
 
 # ============================================================
 # ENTRY POINT
