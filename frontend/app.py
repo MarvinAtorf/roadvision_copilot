@@ -50,7 +50,6 @@ if "messages" not in st.session_state:
 # --- Zwei Container nebeneinander: 80/20 ---
 col1, col2 = st.columns([4, 3])
 
-############################################
 with col1, st.container(border=True, height=700):
     uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
 
@@ -83,11 +82,6 @@ with col1, st.container(border=True, height=700):
         st.info("No video uploaded yet.")
 
     st.button("Generate report")
-############################################
-
-
-
-
 
 
 with col2, st.container(border=True, height=700):
