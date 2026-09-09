@@ -1,0 +1,2647 @@
+import json
+from pathlib import Path
+
+from pydantic import BaseModel
+
+
+class TrafficSignClass(BaseModel):
+    gtsign_class_id: int
+    stvo_code: str
+    german_official_name: str
+    english_name: str
+    category: str
+    legal_reference: str
+    explanation: str
+    rules_and_fines: str
+
+
+def load_traffic_sign_classes(json_path: str | None = None) -> list[TrafficSignClass]:
+    if json_path is None:
+        downloads_path = Path.home() / "Downloads" / "gtsign220_stvo_full_knowledge_base.json"
+
+        project_path = Path(__file__).parent / "gtsign220_stvo_full_knowledge_base.json"
+        path_to_use = downloads_path if downloads_path.exists() else project_path
+    else:
+        path_to_use = Path(json_path)
+    if not path_to_use.exists():
+        return []
+
+    with Path.open(path_to_use, encoding="utf-8") as f:
+        data = json.load(f)
+
+        result = []
+        for item in data:
+            if isinstance(item, str):
+                try:
+                    item = json.loads(item)  # String içindeki JSON verisini parse eder
+                except Exception:
+                    continue
+            if isinstance(item, dict):
+                result.append(TrafficSignClass(**item))
+        return result
+
+
+traffic_sign_classes = load_traffic_sign_classes()
+
+(
+    TraﬃcSignClass(
+        gtsign_class_id=4,
+        stvo_code="Sign 274-80",
+        german_oﬃcial_name="Zulässige Höchstgeschwindigkeit 80 km/h",
+        english_name="Speed limit 80 km/h",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 49)",
+        explanation="Sets maximum speed limit to 80 km/h.",
+        rules_and_fines="Fines according to speed violation scale.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=5,
+        stvo_code="Sign 274-60",
+        german_oﬃcial_name="Zulässige Höchstgeschwindigkeit 60 km/h",
+        english_name="Speed limit 60 km/h",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 49)",
+        explanation="Sets maximum speed limit to 60 km/h.",
+        rules_and_fines="Fines according to speed violation scale.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=6,
+        stvo_code="Sign 274-120",
+        german_oﬃcial_name="Zulässige Höchstgeschwindigkeit 120 km/h",
+        english_name="Speed limit 120 km/h",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 49)",
+        explanation="Sets maximum speed limit to 120 km/h.",
+        rules_and_fines="Fines according to speed violation scale.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=7,
+        stvo_code="Sign 276",
+        german_oﬃcial_name="Überholverbot für Kraftfahrzeuge aller Art",
+        english_name="No overtaking for all motor vehicles",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 53)",
+        explanation="Prohibits multi-track motor vehicles and motorcycles with sidecars from overtaking.",
+        rules_and_fines="Fine starting from €70 and 1 point in Flensburg.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=8,
+        stvo_code="Sign 277",
+        german_oﬃcial_name="Überholverbot für Kraftfahrzeuge über 3,5t",
+        english_name="No overtaking for heavy goods vehicles (>3.5t)",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 54)",
+        explanation="Prohibits vehicles over 3.5t maximum permissible mass from overtaking.",
+        rules_and_fines="Fine starting from €70 and 1 point in Flensburg for trucks.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=9,
+        stvo_code="Sign 306",
+        german_oﬃcial_name="Vorfahrtsstraße",
+        english_name="Priority Road",
+        category="Priority / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 2)",
+        explanation="Grants right-of-way at upcoming intersections along this road.",
+        rules_and_fines="Cross-traﬃc failing to yield incurs severe fines and points.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=10,
+        stvo_code="Sign 205",
+        german_oﬃcial_name="Vorfahrt gewähren!",
+        english_name="Yield / Give Way",
+        category="Right-of-Way / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 2)",
+        explanation="Mandates drivers to yield right-of-way to cross-street traﬃc.",
+        rules_and_fines="Failure to yield: fine starting from €25 up to €120 and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=11,
+        stvo_code="Sign 206",
+        german_oﬃcial_name="Halt! Vorfahrt gewähren!",
+        english_name="Stop Sign",
+        category="Right-of-Way / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 3)",
+        explanation="Mandatory full stop at the stop line before yielding right-of-way.",
+        rules_and_fines="Rolling stop / failing to stop: €85 fine and 1 point in Flensburg.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=12,
+        stvo_code="Sign 250",
+        german_oﬃcial_name="Verbot für Fahrzeuge aller Art",
+        english_name="No Vehicles Allowed",
+        category="Prohibition / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 28)",
+        explanation="Prohibits entry for all vehicles.",
+        rules_and_fines="Unauthorized entry: fine up to €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=13,
+        stvo_code="Sign 253",
+        german_oﬃcial_name="Verbot für Kraftfahrzeuge über 3,5t",
+        english_name="No heavy commercial vehicles (>3.5t)",
+        category="Prohibition / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 30)",
+        explanation="Prohibits motor vehicles exceeding 3.5t total mass.",
+        rules_and_fines="Violation fine starting from €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=14,
+        stvo_code="Sign 267",
+        german_oﬃcial_name="Verbot der Einfahrt",
+        english_name="No Entry (One-Way Street)",
+        category="Prohibition / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 41)",
+        explanation="Prohibits entry into a road from this direction.",
+        rules_and_fines="Driving against one-way direction: fine up to €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=15,
+        stvo_code="Sign 101",
+        german_oﬃcial_name="Gefahrstelle",
+        english_name="General Hazard Warning",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 1)",
+        explanation="Warns of an unspecified general hazard on the roadway ahead.",
+        rules_and_fines="Failure to exercise due caution: general fine under § 1 StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=16,
+        stvo_code="Sign 103-10",
+        german_oﬃcial_name="Kurve (links)",
+        english_name="Sharp Curve Left",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 3)",
+        explanation="Warns of a dangerous left curve ahead.",
+        rules_and_fines="Adapted speed required; failure to adjust speed causing crash results infine and points.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=17,
+        stvo_code="Sign 103-20",
+        german_oﬃcial_name="Kurve (rechts)",
+        english_name="Sharp Curve Right",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 4)",
+        explanation="Warns of a dangerous right curve ahead.",
+        rules_and_fines="Adapted speed required.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=18,
+        stvo_code="Sign 105-10",
+        german_oﬃcial_name="Doppelkurve (zunächst links)",
+        english_name="Double Curve (First to Left)",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 5)",
+        explanation="Warns of double curve starting with a left bend.",
+        rules_and_fines="Adapted speed required.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=19,
+        stvo_code="Sign 112",
+        german_oﬃcial_name="Unebene Fahrbahn",
+        english_name="Uneven Road Surface",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 10)",
+        explanation="Warns of rough or uneven pavement ahead.",
+        rules_and_fines="Failure to adapt speed: potential liability for damage.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=20,
+        stvo_code="Sign 114",
+        german_oﬃcial_name="Schleuder- oder Rutschgefahr",
+        english_name="Slippery Road Surface",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 11)",
+        explanation="Warns of potential slippery road conditions.",
+        rules_and_fines="Driver must adapt speed to road conditions.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=21,
+        stvo_code="Sign 120",
+        german_oﬃcial_name="Verengte Fahrbahn",
+        english_name="Road Narrows Ahead",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 13)",
+        explanation="Warns that the roadway narrows on both sides.",
+        rules_and_fines="Observe right-of-way and priority rules in narrow bottlenecks.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=22,
+        stvo_code="Sign 123",
+        german_oﬃcial_name="Arbeitsstelle",
+        english_name="Roadworks / Construction",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 15)",
+        explanation="Warns of road construction work ahead.",
+        rules_and_fines="Failure to obey speed restrictions in construction zones results in increased fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=23,
+        stvo_code="Sign 131",
+        german_oﬃcial_name="Lichtzeichenanlage",
+        english_name="Traﬃc Signals Ahead",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 17)",
+        explanation="Warns of upcoming traﬃc signal lights.",
+        rules_and_fines="Drivers must prepare to stop if signal turns yellow/red.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=24,
+        stvo_code="Sign 133",
+        german_oﬃcial_name="Fußgänger",
+        english_name="Pedestrians Crossing",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 18)",
+        explanation="Warns of heightened pedestrian activity or pedestrian crossing.",
+        rules_and_fines="Failure to yield at designated pedestrian crossings: €80 fine and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=25,
+        stvo_code="Sign 136",
+        german_oﬃcial_name="Kinder",
+        english_name="Children Crossing",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 19)",
+        explanation="Warns of children near schools, playgrounds, or kindergartens.",
+        rules_and_fines="Heightened care duty under § 3 Abs. 2a StVO; non-compliance results in heavy fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=26,
+        stvo_code="Sign 138",
+        german_oﬃcial_name="Radverkehr",
+        english_name="Cyclists Ahead",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 20)",
+        explanation="Warns of crossing or oncoming bicycle traﬃc.",
+        rules_and_fines="Failure to yield to cyclists where required results in fines and points.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=27,
+        stvo_code="Sign 142",
+        german_oﬃcial_name="Schnee- oder Eisglätte",
+        english_name="Snow / Ice Hazard",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 22)",
+        explanation="Warns of road conditions with snow or ice.",
+        rules_and_fines="Mandatory winter equipment / tire rule under § 2 Abs. 3a StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=28,
+        stvo_code="Sign 142-10",
+        german_oﬃcial_name="Wildwechsel",
+        english_name="Wild Animals Crossing",
+        category="Warning Sign",
+        legal_reference="§ 40 Abs. 6 StVO (Anlage 1 StVO, Lfd. Nr. 23)",
+        explanation="Warns of possible wild animal crossings.",
+        rules_and_fines="Exercise heightened alertness, especially at dawn/dusk.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=29,
+        stvo_code="Sign 278",
+        german_oﬃcial_name="Ende der zulässigen Höchstgeschwindigkeit",
+        english_name="End of Speed Limit",
+        category="De-restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 55)",
+        explanation="Cancels previously set explicit speed limit.",
+        rules_and_fines="Default default statutory road limits resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=30,
+        stvo_code="Sign 282",
+        german_oﬃcial_name="Ende sämtlicher Streckenverbote",
+        english_name="End of All Restrictions",
+        category="De-restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 58)",
+        explanation="Cancels all previous route restrictions (speed limits, no overtaking).",
+        rules_and_fines="Standard statutory driving rules resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=31,
+        stvo_code="Sign 222",
+        german_oﬃcial_name="Vorgeschriebene Vorbeifahrt - Rechts vorbei",
+        english_name="Pass on Right Side",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 12)",
+        explanation="Mandates vehicles to pass an obstacle on the right side.",
+        rules_and_fines="Passing on wrong side: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=32,
+        stvo_code="Sign 222-20",
+        german_oﬃcial_name="Vorgeschriebene Vorbeifahrt - Links vorbei",
+        english_name="Pass on Left Side",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 13)",
+        explanation="Mandates vehicles to pass an obstacle on the left side.",
+        rules_and_fines="Passing on wrong side: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=33,
+        stvo_code="Sign 215",
+        german_oﬃcial_name="Kreisverkehr",
+        english_name="Roundabout",
+        category="Regulatory / Right-of-Way",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 8)",
+        explanation="Mandates driving in a roundabout; traﬃc in the roundabout has right-of-way if paired with Sign 205.",
+        rules_and_fines="Failure to yield to traﬃc in roundabout: fine up to €35; indicate turn signals only upon exiting.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=34,
+        stvo_code="Sign 209-30",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Rechts",
+        english_name="Turn Right Ahead",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 4)",
+        explanation="Mandates turning right at the upcoming intersection.",
+        rules_and_fines="Turning against prescribed direction: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=35,
+        stvo_code="Sign 209-10",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Links",
+        english_name="Turn Left Ahead",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 5)",
+        explanation="Mandates turning left at the upcoming intersection.",
+        rules_and_fines="Turning against prescribed direction: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=36,
+        stvo_code="Sign 209-20",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Geradeaus",
+        english_name="Proceed Straight Ahead",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 6)",
+        explanation="Mandates driving straight ahead.",
+        rules_and_fines="Turning against prescribed direction: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=37,
+        stvo_code="Sign 211-20",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Hier rechts",
+        english_name="Turn Right Here",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 7)",
+        explanation="Mandates turning right immediately at this spot.",
+        rules_and_fines="Failure to follow turn instruction: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=38,
+        stvo_code="Sign 214-20",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Geradeaus oder rechts",
+        english_name="Proceed Straight or Turn Right",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 9)",
+        explanation="Drivers may only proceed straight or turn right.",
+        rules_and_fines="Turning left illegally: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=39,
+        stvo_code="Sign 214-10",
+        german_oﬃcial_name="Vorgeschriebene Fahrtrichtung - Geradeaus oder links",
+        english_name="Proceed Straight or Turn Left",
+        category="Regulatory / Directional",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 10)",
+        explanation="Drivers may only proceed straight or turn left.",
+        rules_and_fines="Turning right illegally: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=40,
+        stvo_code="Sign 301",
+        german_oﬃcial_name="Vorfahrt an der nächsten Kreuzung",
+        english_name="Priority at Next Intersection",
+        category="Right-of-Way / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 1)",
+        explanation="Grants right-of-way exclusively at the next upcoming intersection.",
+        rules_and_fines="Violating priority incurs heavy fines for cross traﬃc.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=41,
+        stvo_code="Sign 310",
+        german_oﬃcial_name="Ortstafel (Vorderseite)",
+        english_name="Town Name Sign (Urban Entrance)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Marks entry into an urban area; automatically triggers 50 km/h speed limit.",
+        rules_and_fines="Speeding innerorts incurs higher fine rates under Bußgeldkatalog.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=42,
+        stvo_code="Sign 311",
+        german_oﬃcial_name="Ortstafel (Rückseite)",
+        english_name="Town Name Sign (Urban Exit)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 11)",
+        explanation="Marks end of urban area; standard 100 km/h rural limit applies unless otherwise posted.",
+        rules_and_fines="Rural speed limits apply.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=43,
+        stvo_code="Sign 330.1",
+        german_oﬃcial_name="Autobahn",
+        english_name="Motorway Entrance",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 14)",
+        explanation="Marks entry onto a motorway; reserved for vehicles with min design speed >60 km/h.",
+        rules_and_fines="Reversing, U-turns, stopping forbidden (§ 18 StVO); fines up to €200 and driving bans.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=44,
+        stvo_code="Sign 330.2",
+        german_oﬃcial_name="Ende der Autobahn",
+        english_name="End of Motorway",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 15)",
+        explanation="Marks end of motorway driving rules.",
+        rules_and_fines="Standard rural/urban driving rules resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=45,
+        stvo_code="Sign 331.1",
+        german_oﬃcial_name="Kraftfahrstraße",
+        english_name="Expressway Entrance",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 16)",
+        explanation="Marks entry onto an expressway (min vehicle design speed >60 km/h required).",
+        rules_and_fines="Prohibits pedestrians, bicycles, and slow vehicles.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=46,
+        stvo_code="Sign 325.1",
+        german_oﬃcial_name="Verkehrsberuhigter Bereich",
+        english_name="Traﬃc Calmed Area / Living Street",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 12)",
+        explanation="Pedestrian priority zone; max speed walking pace (Schrittgeschwindigkeit ~4-7 km/h).",
+        rules_and_fines="Exceeding walking pace: fine starting from €15 up to driving bans for severe excess.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=47,
+        stvo_code="Sign 325.2",
+        german_oﬃcial_name="Ende des verkehrsberuhigten Bereichs",
+        english_name="End of Traﬃc Calmed Area",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 13)",
+        explanation="End of living street zone. Leaving vehicles must yield to all traﬃc on intersecting road.",
+        rules_and_fines="Failure to yield when exiting zone: €25 to €50 fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=48,
+        stvo_code="Sign 237",
+        german_oﬃcial_name="Radweg",
+        english_name="Mandatory Bicycle Lane",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 16)",
+        explanation="Mandatory lane designated exclusively for bicycles.",
+        rules_and_fines="Motor vehicles driving or parking on bicycle lane: fine up to €100 and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=49,
+        stvo_code="Sign 239",
+        german_oﬃcial_name="Gehweg",
+        english_name="Pedestrian Footpath",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 18)",
+        explanation="Designated exclusively for pedestrian traﬃc.",
+        rules_and_fines="Driving on footpath: fine up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=50,
+        stvo_code="Sign 240",
+        german_oﬃcial_name="Gemeinsamer Geh- und Radweg",
+        english_name="Joint Pedestrian and Bicycle Path",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 19)",
+        explanation="Shared path designated for pedestrians and bicycles only.",
+        rules_and_fines="Unauthorized motorized vehicles forbidden; fine up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=51,
+        stvo_code="Sign 241-30",
+        german_oﬃcial_name="Getrennter Rad- und Gehweg (Radweg links)",
+        english_name="Separated Bicycle and Pedestrian Path (Bike Left)",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 20)",
+        explanation="Separated paths for pedestrians and cyclists, bicycle lane on the left side.",
+        rules_and_fines="Unauthorized motor vehicle entry results in fines up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=52,
+        stvo_code="Sign 241-31",
+        german_oﬃcial_name="Getrennter Rad- und Gehweg (Radweg rechts)",
+        english_name="Separated Bicycle and Pedestrian Path (Bike Right)",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 21)",
+        explanation="Separated paths for pedestrians and cyclists, bicycle lane on the right side.",
+        rules_and_fines="Unauthorized motor vehicle entry results in fines up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=53,
+        stvo_code="Sign 242.1",
+        german_oﬃcial_name="Beginn einer Fußgängerzone",
+        english_name="Pedestrian Zone Begins",
+        category="Regulatory / Special Area",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 22)",
+        explanation="Designated area exclusively for pedestrians. Motorized vehicles prohibited unless supplementary sign indicates exemption.",
+        rules_and_fines="Driving in pedestrian zone without authorization: fine up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=54,
+        stvo_code="Sign 242.2",
+        german_oﬃcial_name="Ende einer Fußgängerzone",
+        english_name="End of Pedestrian Zone",
+        category="Regulatory / Special Area",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 23)",
+        explanation="Marks the exit of the pedestrian zone.",
+        rules_and_fines="Standard road driving rules re-apply upon exit.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=55,
+        stvo_code="Sign 244.1",
+        german_oﬃcial_name="Beginn einer Fahrradstraße",
+        english_name="Bicycle Road Begins",
+        category="Regulatory / Special Area",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 23.1)",
+        explanation="Road reserved primarily for bicycles. Max speed limit 30 km/h; cyclists may ride side by side.",
+        rules_and_fines="Tailgating or obstructing cyclists: fine up to €35; speed violations penalizedunder standard speed fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=56,
+        stvo_code="Sign 244.2",
+        german_oﬃcial_name="Ende einer Fahrradstraße",
+        english_name="End of Bicycle Road",
+        category="Regulatory / Special Area,h.",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 23.2)",
+        explanation="Marks the end of a designated bicycle street.",
+        rules_and_fines="Standard street rules apply beyond this sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=57,
+        stvo_code="Sign 244.3",
+        german_oﬃcial_name="Beginn einer Fahrradzone",
+        english_name="Bicycle Zone Begins",
+        category="Regulatory / Special Area",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 23.3)",
+        explanation="Entire zone dedicated to bicycle priority with a maximum speed limit of 30 km/",
+        rules_and_fines="Violating speed limit or endangering cyclists results in fines up to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=58,
+        stvo_code="Sign 244.4",
+        german_oﬃcial_name="Ende einer Fahrradzone",
+        english_name="End of Bicycle Zone",
+        category="Regulatory / Special Area",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 23.4)",
+        explanation="Marks the end of a bicycle zone.",
+        rules_and_fines="Standard zonal speed limits apply after exit.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=59,
+        stvo_code="Sign 245",
+        german_oﬃcial_name="Bussonderfahrstreifen",
+        english_name="Bus Lane",
+        category="Regulatory / Dedicated Lane",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 24)",
+        explanation="Lane reserved strictly for public buses and authorized vehicles.",
+        rules_and_fines="Unauthorized driving on bus lane: fine starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=60,
+        stvo_code="Sign 251",
+        german_oﬃcial_name="Verbot für Kraftwagen und sonstige zweispurige Kraftfahrzeuge",
+        english_name="No Cars or Multi-track Motor Vehicles",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 29)",
+        explanation="Prohibits entry for cars, trucks, and all multi-track motor vehicles.",
+        rules_and_fines="Illegal entry fine starting from €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=61,
+        stvo_code="Sign 254",
+        german_oﬃcial_name="Verbot für Radverkehr",
+        english_name="No Bicycles",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 31)",
+        explanation="Prohibits bicycle traﬃc on the designated road or path.",
+        rules_and_fines="Bicycle fine for violation up to €35.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=62,
+        stvo_code="Sign 255",
+        german_oﬃcial_name="Verbot für Motorräder",
+        english_name="No Motorcycles",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 32)",
+        explanation="Prohibits entry for all motorcycles and sidecars.",
+        rules_and_fines="Fine for non-compliance starting from €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=63,
+        stvo_code="Sign 257-54",
+        german_oﬃcial_name="Verbot für Mofas",
+        english_name="No Mopeds",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 33)",
+        explanation="Prohibits entry for mopeds.",
+        rules_and_fines="Violation fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=64,
+        stvo_code="Sign 260",
+        german_oﬃcial_name="Verbot für Krafträder und Kraftwagen",
+        english_name="No Motor Vehicles",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 35)",
+        explanation="Prohibits all motor vehicles (motorcycles, cars, trucks).",
+        rules_and_fines="Unauthorized entry fine starting from €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=65,
+        stvo_code="Sign 261",
+        german_oﬃcial_name="Verbot für kennzeichnungspflichtige Kraftfahrzeuge mit gefährlichen Gütern",
+        english_name="No Vehicles Carrying Hazardous Goods",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 36)",
+        explanation="Prohibits vehicles carrying hazardous goods requiring placarding.",
+        rules_and_fines="Fine for violation up to €250.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=66,
+        stvo_code="Sign 262-5.5",
+        german_oﬃcial_name="Tatsächliche Masse 5.5t",
+        english_name="Weight Limit 5.5t",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 37)",
+        explanation="Prohibits vehicles exceeding the actual total mass specified (e.g., 5.5 tonnes).",
+        rules_and_fines="Violation results in fines and potential vehicle damage liability.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=67,
+        stvo_code="Sign 263-8",
+        german_oﬃcial_name="Tatsächliche Achslast 8t",
+        english_name="Axle Weight Limit 8t",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 38)",
+        explanation="Prohibits vehicles exceeding the specified actual axle weight.",
+        rules_and_fines="Fines according to overweight scale in Bußgeldkatalog.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=68,
+        stvo_code="Sign 264-2",
+        german_oﬃcial_name="Tatsächliche Breite 2m",
+        english_name="Width Limit 2m",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 39)",
+        explanation="Prohibits vehicles wider than specified (including side mirrors).",
+        rules_and_fines="Fine starting from €55 for exceeding width limit.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=69,
+        stvo_code="Sign 265-3.8",
+        german_oﬃcial_name="Tatsächliche Höhe 3.8m",
+        english_name="Height Limit 3.8m",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 40)",
+        explanation="Prohibits vehicles taller than the specified height.",
+        rules_and_fines="Fine and liability for bridge/structure damage.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=70,
+        stvo_code="Sign 266-10",
+        german_oﬃcial_name="Tatsächliche Länge 10m",
+        english_name="Length Limit 10m",
+        category="Regulatory / Prohibition",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 40.1)",
+        explanation="Prohibits vehicles or vehicle combinations exceeding specified total length.",
+        rules_and_fines="Fine for non-compliance with vehicle dimension limits.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=71,
+        stvo_code="Sign 270.1",
+        german_oﬃcial_name="Beginn einer Umweltzone",
+        english_name="Environmental Zone Begins",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 44)",
+        explanation="Entry restricted to vehicles fulfilling emission standards denoted by badge color.",
+        rules_and_fines="Driving into Environmental Zone without required badge: €100 fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=72,
+        stvo_code="Sign 270.2",
+        german_oﬃcial_name="Ende einer Umweltzone",
+        english_name="End of Environmental Zone",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 45)",
+        explanation="Marks end of environmental emission zone restrictions.",
+        rules_and_fines="Environmental badge rules no longer enforced.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=73,
+        stvo_code="Sign 273",
+        german_oﬃcial_name="Vorgeschriebener Mindestabstand",
+        english_name="Minimum Following Distance",
+        category="Regulatory / Restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 48)",
+        explanation="Mandates minimum distance (e.g. 50m) between heavy goods vehicles.",
+        rules_and_fines="Failure to keep required minimum distance: fine starting from €80 and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=74,
+        stvo_code="Sign 274.1",
+        german_oﬃcial_name="Beginn einer Tempo 30-Zone",
+        english_name="30 km/h Zone Begins",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 50)",
+        explanation="Zonal speed limit of 30 km/h; priority usually governed by yield to right (Rechts vor Links).",
+        rules_and_fines="Speeding fines applied under standard penal code scale.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=75,
+        stvo_code="Sign 274.2",
+        german_oﬃcial_name="Ende einer Tempo 30-Zone",
+        english_name="End of 30 km/h Zone",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 51)",
+        explanation="Marks the exit of a 30 km/h zonal speed limit.",
+        rules_and_fines="Standard road limit re-applies.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=76,
+        stvo_code="Sign 275",
+        german_oﬃcial_name="Vorgeschriebene Mindestgeschwindigkeit",
+        english_name="Minimum Speed Limit",
+        category="Regulatory / Mandatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 52)",
+        explanation="Mandates driving at or above the specified minimum speed under normal conditions.",
+        rules_and_fines="Driving unnecessarily slow without reason: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=77,
+        stvo_code="Sign 279",
+        german_oﬃcial_name="Ende der vorgeschriebenen Mindestgeschwindigkeit",
+        english_name="End of Minimum Speed Limit",
+        category="De-restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 56)",
+        explanation="Cancels previously posted minimum speed limit requirement.",
+        rules_and_fines="Standard speed rules apply.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=78,
+        stvo_code="Sign 280",
+        german_oﬃcial_name="Ende des Überholverbotes für Kraftfahrzeuge aller Art",
+        english_name="End of No Overtaking",
+        category="De-restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 57)",
+        explanation="Cancels the prohibition of overtaking for all motor vehicles.",
+        rules_and_fines="Overtaking permitted where safe and allowed by markings.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=79,
+        stvo_code="Sign 281",
+        german_oﬃcial_name="Ende des Überholverbotes für Kraftfahrzeuge über 3,5t",
+        english_name="End of No Overtaking for Heavy Goods Vehicles",
+        category="De-restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 57.1)",
+        explanation="Cancels overtaking prohibition for heavy vehicles over 3.5 tonnes.",
+        rules_and_fines="Overtaking permitted for trucks.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=80,
+        stvo_code="Sign 283",
+        german_oﬃcial_name="Absolutes Haltverbot",
+        english_name="Absolute No Stopping",
+        category="Regulatory / Parking Restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 62)",
+        explanation="Prohibits stopping on the roadway or shoulder at any time.",
+        rules_and_fines="Stopping fine starting from €20; higher if obstructing traﬃc or towing occurs.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=81,
+        stvo_code="Sign 286",
+        german_oﬃcial_name="Eingeschränktes Haltverbot",
+        english_name="Restricted Stopping / No Parking",
+        category="Regulatory / Parking Restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 63)",
+        explanation="Prohibits stopping for longer than 3 minutes except for loading/unloading or passenger boarding.",
+        rules_and_fines="Parking violation fine starting from €25.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=82,
+        stvo_code="Sign 290.1",
+        german_oﬃcial_name="Beginn eines eingeschränkten Haltverbots für eine Zone",
+        english_name="No Parking Zone Begins",
+        category="Regulatory / Parking Restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 64)",
+        explanation="Zonal restricted stopping; parking prohibited in the entire area except marked spaces.",
+        rules_and_fines="Unauthorized zonal parking incurs fines from €25 to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=83,
+        stvo_code="Sign 290.2",
+        german_oﬃcial_name="Ende eines eingeschränkten Haltverbots für eine Zone",
+        english_name="End of No Parking Zone",
+        category="Regulatory / Parking Restriction",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 65)",
+        explanation="Marks exit of the zonal parking restriction.",
+        rules_and_fines="Standard stopping and parking regulations resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=84,
+        stvo_code="Sign 293",
+        german_oﬃcial_name="Fußgängerüberweg (Zebrastreifen)",
+        english_name="Pedestrian Crossing (Zebra Crossing)",
+        category="Regulatory / Marking",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 66)",
+        explanation="Mandatory yield to pedestrians and wheelchair users waiting to cross or crossing.",
+        rules_and_fines="Failure to yield at pedestrian crossing: €80 fine and 1 point in Flensburg.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=85,
+        stvo_code="Sign 294",
+        german_oﬃcial_name="Haltlinie",
+        english_name="Stop Line Marking",
+        category="Regulatory / Marking",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 67)",
+        explanation="Indicates exact line where vehicle must stop at stop signs or red traﬃc lights.",
+        rules_and_fines="Crossing stop line on red signal: red-light violation fines starting from €90 up to €360 and bans.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=86,
+        stvo_code="Sign 295",
+        german_oﬃcial_name="Fahrstreifenbegrenzung / Durchgehende Linie",
+        english_name="Solid Center / Lane Boundary Line",
+        category="Regulatory / Marking",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 68)",
+        explanation="Solid lane line; vehicles must not cross or straddle this line.",
+        rules_and_fines="Crossing continuous line: fine starting from €30 up to €150 and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=87,
+        stvo_code="Sign 298",
+        german_oﬃcial_name="Sperrfläche",
+        english_name="Hatched Road Area / Chevrons",
+        category="Regulatory / Marking",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 71)",
+        explanation="Marked hatched surface; vehicles must not drive over or stop on this area.",
+        rules_and_fines="Driving over hatched surface: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=88,
+        stvo_code="Sign 308",
+        german_oﬃcial_name="Vorrang vor dem Gegenverkehr",
+        english_name="Priority Over Oncoming Traﬃc",
+        category="Priority / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 3)",
+        explanation="Grants priority over oncoming traﬃc in narrow road bottlenecks.",
+        rules_and_fines="Oncoming traﬃc must yield; failure incurs fines for oncoming drivers.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=89,
+        stvo_code="Sign 208",
+        german_oﬃcial_name="Vorrang des Gegenverkehrs",
+        english_name="Give Way to Oncoming Traﬃc",
+        category="Priority / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 5)",
+        explanation="Mandates yielding right-of-way to oncoming traﬃc in narrow road sections.",
+        rules_and_fines="Forcing way against oncoming traﬃc: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=90,
+        stvo_code="Sign 314",
+        german_oﬃcial_name="Parken",
+        english_name="Parking Permitted",
+        category="Information / Directional",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 7)",
+        explanation="Indicates designated public parking area.",
+        rules_and_fines="Parking outside specified boundaries or times may result in warnings.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=91,
+        stvo_code="Sign 314.1",
+        german_oﬃcial_name="Beginn einer Parkraumbewirtschaftungszone",
+        english_name="Park Management Zone Begins",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 8)",
+        explanation="Parking permitted only with parking disc or valid ticket within the entire zone.",
+        rules_and_fines="Parking without ticket/disc: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=92,
+        stvo_code="Sign 314.2",
+        german_oﬃcial_name="Ende einer Parkraumbewirtschaftungszone",
+        english_name="End of Park Management Zone",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 9)",
+        explanation="Marks exit of parking ticket management zone.",
+        rules_and_fines="Standard parking rules resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=93,
+        stvo_code="Sign 326.1",
+        german_oﬃcial_name="Beginn eines verkehrsberuhigten Geschäftsbereichs",
+        english_name="Traﬃc Calmed Commercial Zone Begins",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 50.1)",
+        explanation="Zonal speed restriction (e.g., 20 km/h or 10 km/h) in busy commercial streets.",
+        rules_and_fines="Speed violations fined under Bußgeldkatalog.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=94,
+        stvo_code="Sign 326.2",
+        german_oﬃcial_name="Ende eines verkehrsberuhigten Geschäftsbereichs",
+        english_name="End of Traﬃc Calmed Commercial Zone",
+        category="Regulatory / Special Zone",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 50.2)",
+        explanation="Marks end of commercial traﬃc calmed area.",
+        rules_and_fines="Standard speed limits re-apply.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=95,
+        stvo_code="Sign 350-10",
+        german_oﬃcial_name="Fußgängerüberweg (Richtzeichen)",
+        english_name="Pedestrian Crossing Location",
+        category="Information / Directional",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 27)",
+        explanation="Marks the exact position of a pedestrian crossing on the roadway.",
+        rules_and_fines="Parking within 5m before the crossing is prohibited (€25-€35 fine).",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=96,
+        stvo_code="Sign 357",
+        german_oﬃcial_name="Sackgasse",
+        english_name="Dead End / Cul-de-sac",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 28)",
+        explanation="Indicates a street with no through road for motorized traﬃc.",
+        rules_and_fines="No specific fine; driver must turn around to exit.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=97,
+        stvo_code="Sign 357-50",
+        german_oﬃcial_name="Sackgasse für Radverkehr und Fußgänger durchlässig",
+        english_name="Dead End (Except Pedestrians and Cyclists)",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 28.1)",
+        explanation="Indicates a dead end for motor vehicles that remains open for cyclists and pedestrians.",
+        rules_and_fines="Motor vehicles cannot pass through.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=98,
+        stvo_code="Sign 386.1",
+        german_oﬃcial_name="Touristischer Hinweis",
+        english_name="Tourist Information Sign",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 39)",
+        explanation="Provides information on tourist attractions or points of interest.",
+        rules_and_fines="No direct traﬃc penalty.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=99,
+        stvo_code="Sign 1000-10",
+        german_oﬃcial_name="Zusatzzeichen: Richtung der Hauptstraße (links knickend)",
+        english_name="Supplementary Sign: Priority Road Curves Left",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates that the priority road turns left at the intersection.",
+        rules_and_fines="Traﬃc following the priority curve has right-of-way over non-priority branches.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=100,
+        stvo_code="Sign 1000-20",
+        german_oﬃcial_name="Zusatzzeichen: Richtung der Hauptstraße (rechts knickend)",
+        english_name="Supplementary Sign: Priority Road Curves Right",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates that the priority road turns right at the intersection.",
+        rules_and_fines="Traﬃc following the priority curve has right-of-way over non-priority branches.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=101,
+        stvo_code="Sign 1001-30",
+        german_oﬃcial_name="Zusatzzeichen: Länge der Verbotsstrecke (auf ... m)",
+        english_name="Supplementary Sign: Distance Length (for ... m)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates the exact distance over which the main sign's restriction applies.",
+        rules_and_fines="Restriction remains legally binding for the specified distance.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=102,
+        stvo_code="Sign 1004-30",
+        german_oﬃcial_name="Zusatzzeichen: Entfernungsangabe (in ... m)",
+        english_name="Supplementary Sign: Distance Ahead (in ... m)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates that the main sign restriction or warning begins after the specified distance.",
+        rules_and_fines="Main rule applies starting at the specified meters ahead.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=103,
+        stvo_code="Sign 1007-30",
+        german_oﬃcial_name="Zusatzzeichen: Anlieger frei",
+        english_name="Supplementary Sign: Residents / Local Traﬃc Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts local residents and visitors to residents from the prohibition.",
+        rules_and_fines="Unauthorized entry by non-residents: fine starting from €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=104,
+        stvo_code="Sign 1007-31",
+        german_oﬃcial_name="Zusatzzeichen: Lieferverkehr frei",
+        english_name="Supplementary Sign: Delivery Vehicles Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts commercial delivery vehicles from the prohibition.",
+        rules_and_fines="Non-delivery vehicles entering incur fines up to €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=105,
+        stvo_code="Sign 1007-32",
+        german_oﬃcial_name="Zusatzzeichen: Radverkehr frei",
+        english_name="Supplementary Sign: Cyclists Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts cyclists from the main prohibition (e.g. allows riding in one-way street backwards).",
+        rules_and_fines="Non-cyclists entering strictly penalized.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=106,
+        stvo_code="Sign 1007-33",
+        german_oﬃcial_name="Zusatzzeichen: Landwirtschaftlicher Verkehr frei",
+        english_name="Supplementary Sign: Agricultural Vehicles Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts tractors and agricultural equipment from the access prohibition.",
+        rules_and_fines="Unauthorized passenger vehicle entry results in fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=107,
+        stvo_code="Sign 1007-34",
+        german_oﬃcial_name="Zusatzzeichen: Linienverkehr frei",
+        english_name="Supplementary Sign: Public Transit Buses Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts public schedule transit buses from entry restriction.",
+        rules_and_fines="Non-bus vehicles entering fined under StVO rules.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=108,
+        stvo_code="Sign 1007-35",
+        german_oﬃcial_name="Zusatzzeichen: Elektrofahrzeuge frei",
+        english_name="Supplementary Sign: Electric Vehicles Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts registered battery electric vehicles (E-license plate) from restriction or fee.",
+        rules_and_fines="Non-EVs occupying space face fines starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=109,
+        stvo_code="Sign 1007-36",
+        german_oﬃcial_name="Zusatzzeichen: Carsharing frei",
+        english_name="Supplementary Sign: Carsharing Vehicles Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts authorized badge-holding carsharing vehicles.",
+        rules_and_fines="Unauthorized parking/entry: fine up to €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=110,
+        stvo_code="Sign 1007-37",
+        german_oﬃcial_name="Zusatzzeichen: Schwerbehinderte mit Parkausweis frei",
+        english_name="Supplementary Sign: Disabled Permit Holders Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts vehicles displaying oﬃcial blue disabled parking permit.",
+        rules_and_fines="Unauthorized parking: €55 fine and immediate towing.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=111,
+        stvo_code="Sign 1010-10",
+        german_oﬃcial_name="Zusatzzeichen: Bei Nässe",
+        english_name="Supplementary Sign: In Wet Conditions",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign rule (e.g. speed limit) applies only when the road surface is wet.",
+        rules_and_fines="Speeding in wet conditions incurs full speed violation fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=112,
+        stvo_code="Sign 1010-11",
+        german_oﬃcial_name="Zusatzzeichen: Bei Frost / Glätte",
+        english_name="Supplementary Sign: In Icy Conditions",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign restriction applies when frost, ice, or snow is present.",
+        rules_and_fines="Violating rule under icy road conditions leads to enhanced fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=113,
+        stvo_code="Sign 1012-30",
+        german_oﬃcial_name="Zusatzzeichen: Zeitangabe (z.B. 22 - 6h)",
+        english_name="Supplementary Sign: Time Restriction (e.g., 10 PM - 6 AM)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Restricts the main sign validity to specified hours of the day.",
+        rules_and_fines="Non-compliance during specified time window is fined.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=114,
+        stvo_code="Sign 1012-31",
+        german_oﬃcial_name="Zusatzzeichen: Werktags",
+        english_name="Supplementary Sign: On Workdays",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign applies only on workdays (Monday through Saturday in Germany).",
+        rules_and_fines="Enforced on Monday-Saturday unless holiday.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=115,
+        stvo_code="Sign 1012-32",
+        german_oﬃcial_name="Zusatzzeichen: Mo - Fr",
+        english_name="Supplementary Sign: Monday to Friday",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign restriction is valid exclusively from Monday to Friday.",
+        rules_and_fines="Fines applied during weekdays.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=116,
+        stvo_code="Sign 1012-33",
+        german_oﬃcial_name="Zusatzzeichen: Sa u. So",
+        english_name="Supplementary Sign: Saturdays and Sundays",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign restriction applies only on weekends.",
+        rules_and_fines="Fines enforced during weekend hours.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=117,
+        stvo_code="Sign 1012-34",
+        german_oﬃcial_name="Zusatzzeichen: Sonn- und Feiertage",
+        english_name="Supplementary Sign: Sundays and Public Holidays",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Main sign applies only on Sundays and oﬃcial public holidays.",
+        rules_and_fines="Enforced during designated statutory holidays.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=118,
+        stvo_code="Sign 1020-30",
+        german_oﬃcial_name="Zusatzzeichen: Mit Parkscheibe",
+        english_name="Supplementary Sign: With Parking Disc Required",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Mandates displaying a physical parking disc indicating arrival time.",
+        rules_and_fines="Missing or incorrectly set parking disc: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=119,
+        stvo_code="Sign 1020-31",
+        german_oﬃcial_name="Zusatzzeichen: Mit Parkschein",
+        english_name="Supplementary Sign: Pay and Display Ticket Required",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Parking requires purchasing and displaying a valid ticket.",
+        rules_and_fines="Expired/missing ticket: fine starting from €20 up to €40.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=120,
+        stvo_code="Sign 1022-10",
+        german_oﬃcial_name="Zusatzzeichen: Radverkehr kreuzt von links und rechts",
+        english_name="Supplementary Sign: Cyclists Crossing from Left and Right",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns drivers that cyclists may cross the road from both directions.",
+        rules_and_fines="Drivers must yield where required; failure causes severe penalties.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=121,
+        stvo_code="Sign 1024-10",
+        german_oﬃcial_name="Zusatzzeichen: LKW mit Anhänger",
+        english_name="Supplementary Sign: Trucks with Trailers",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies main sign restriction specifically to trucks pulling trailers.",
+        rules_and_fines="Penalties apply to heavy combination vehicles.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=122,
+        stvo_code="Sign 1024-11",
+        german_oﬃcial_name="Zusatzzeichen: PKW mit Anhänger",
+        english_name="Supplementary Sign: Passenger Cars with Trailers",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies restriction to cars pulling trailers or caravans.",
+        rules_and_fines="Fine for non-compliance with towing restrictions.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=123,
+        stvo_code="Sign 1026-30",
+        german_oﬃcial_name="Zusatzzeichen: Taxi frei",
+        english_name="Supplementary Sign: Taxis Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts licensed commercial taxicabs from entry/lane restrictions.",
+        rules_and_fines="Non-taxi driving in lane: fine starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=124,
+        stvo_code="Sign 1026-31",
+        german_oﬃcial_name="Zusatzzeichen: Linienbusse frei",
+        english_name="Supplementary Sign: Scheduled Buses Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts scheduled transit buses.",
+        rules_and_fines="Unauthorized entry fine starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=125,
+        stvo_code="Sign 1028-30",
+        german_oﬃcial_name="Zusatzzeichen: Baustellenverkehr frei",
+        english_name="Supplementary Sign: Construction Traﬃc Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Exempts construction site vehicles from local prohibition.",
+        rules_and_fines="Unauthorized entry fined under StVO code.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=126,
+        stvo_code="Sign 1031-50",
+        german_oﬃcial_name="Zusatzzeichen: Lärmschutz",
+        english_name="Supplementary Sign: Noise Protection",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates speed limit or restriction is imposed to reduce neighborhood noise pollution.",
+        rules_and_fines="Standard speed fines apply.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=127,
+        stvo_code="Sign 1031-51",
+        german_oﬃcial_name="Zusatzzeichen: Luftreinhaltung",
+        english_name="Supplementary Sign: Air Pollution Control",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates speed restriction is implemented for environmental air quality control.",
+        rules_and_fines="Standard speed fines apply.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=128,
+        stvo_code="Sign 1040-30",
+        german_oﬃcial_name="Zusatzzeichen: Haltverbotsbereich - Anfang",
+        english_name="Supplementary Sign: No Stopping Begins (Arrow Right/Forward)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Arrow points toward roadway indicating the start of a no-stopping zone.",
+        rules_and_fines="Stopping beyond sign: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=129,
+        stvo_code="Sign 1040-31",
+        german_oﬃcial_name="Zusatzzeichen: Haltverbotsbereich - Mitte",
+        english_name="Supplementary Sign: No Stopping Continuation (Double Arrow)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Indicates continuation of an active no-stopping restriction zone.",
+        rules_and_fines="Stopping in middle zone: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=130,
+        stvo_code="Sign 1040-32",
+        german_oﬃcial_name="Zusatzzeichen: Haltverbotsbereich - Ende",
+        english_name="Supplementary Sign: No Stopping Ends (Arrow Left/Away)",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Arrow points away from roadway indicating the end of no-stopping zone.",
+        rules_and_fines="Stopping restriction ends past this sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=131,
+        stvo_code="Sign 1042-30",
+        german_oﬃcial_name="Zusatzzeichen: Seitenstreifen befahren erlaubt",
+        english_name="Supplementary Sign: Hard Shoulder May Be Used",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Permits driving on the motorway hard shoulder as an additional lane.",
+        rules_and_fines="Illegal shoulder driving when not enabled: fine €55 to €100.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=132,
+        stvo_code="Sign 1042-31",
+        german_oﬃcial_name="Zusatzzeichen: Seitenstreifen nicht mehr befahren",
+        english_name="Supplementary Sign: Hard Shoulder Usage Ends",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Mandates vehicles to immediately vacate the hard shoulder.",
+        rules_and_fines="Continuing to drive on shoulder: fine starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=133,
+        stvo_code="Sign 1044-30",
+        german_oﬃcial_name="Zusatzzeichen: Nur im Markierungspfeil",
+        english_name="Supplementary Sign: Only Within Marked Arrows",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Restricts main sign instruction strictly to designated lane arrows.",
+        rules_and_fines="Fines for lane discipline violations.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=134,
+        stvo_code="Sign 1048-10",
+        german_oﬃcial_name="Zusatzzeichen: Nur PKW",
+        english_name="Supplementary Sign: Passenger Cars Only",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies rule or parking permission exclusively to passenger motor cars.",
+        rules_and_fines="Non-passenger vehicles face fines starting from €25.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=135,
+        stvo_code="Sign 1048-11",
+        german_oﬃcial_name="Zusatzzeichen: Nur LKW",
+        english_name="Supplementary Sign: Trucks Only",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies rule or parking permission exclusively to heavy goods vehicles.",
+        rules_and_fines="Unpermitted passenger cars parking in truck zones: fine starting from €35.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=136,
+        stvo_code="Sign 1048-12",
+        german_oﬃcial_name="Zusatzzeichen: Nur Wohnmobile",
+        english_name="Supplementary Sign: Motorhomes Only",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Designates parking space exclusively for motorhomes / RVs.",
+        rules_and_fines="Unauthorized parking fine starting from €35.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=137,
+        stvo_code="Sign 1049-10",
+        german_oﬃcial_name="Zusatzzeichen: Gefährliche Stoﬀe (Symbol)",
+        english_name="Supplementary Sign: Hazardous Materials Icon",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies main rule to transport vehicles carrying hazardous cargo.",
+        rules_and_fines="Fines up to €250 for non-compliant dangerous cargo haulage.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=138,
+        stvo_code="Sign 1049-11",
+        german_oﬃcial_name="Zusatzzeichen: Wassergefährdende Stoﬀe",
+        english_name="Supplementary Sign: Water Pollutants Icon",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Applies main rule to transport of water-hazardous substances.",
+        rules_and_fines="Severe environmental fines and traﬃc penalties.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=139,
+        stvo_code="Sign 1052-30",
+        german_oﬃcial_name="Zusatzzeichen: Schulweg",
+        english_name="Supplementary Sign: School Route",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of school children frequenting the roadway.",
+        rules_and_fines="Heightened driver duty of care under § 3 StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=140,
+        stvo_code="Sign 1052-31",
+        german_oﬃcial_name="Zusatzzeichen: Kindergarten",
+        english_name="Supplementary Sign: Kindergarten",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of young children near kindergartens.",
+        rules_and_fines="Heightened care obligation under § 3 Abs. 2a StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=141,
+        stvo_code="Sign 1052-32",
+        german_oﬃcial_name="Zusatzzeichen: Altenheim",
+        english_name="Supplementary Sign: Elderly Care Home",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of elderly pedestrians crossing or walking near the road.",
+        rules_and_fines="Heightened care obligation under § 3 StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=142,
+        stvo_code="Sign 1052-33",
+        german_oﬃcial_name="Zusatzzeichen: Krankenhaus",
+        english_name="Supplementary Sign: Hospital",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of hospital zone with frequent ambulances or patients.",
+        rules_and_fines="Drivers must avoid unnecessary noise (§ 30 StVO) and exercise care.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=143,
+        stvo_code="Sign 1053-30",
+        german_oﬃcial_name="Zusatzzeichen: Unfallgefahr",
+        english_name="Supplementary Sign: Accident Hazard Area",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns that the stretch of road has a statistically high crash frequency.",
+        rules_and_fines="Heightened care required.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=144,
+        stvo_code="Sign 1053-31",
+        german_oﬃcial_name="Zusatzzeichen: Spurrillen",
+        english_name="Supplementary Sign: Rutting Hazard",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of deep ruts in the asphalt causing hydroplaning or steering instability.",
+        rules_and_fines="Driver must adapt speed to road conditions.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=145,
+        stvo_code="Sign 1053-32",
+        german_oﬃcial_name="Zusatzzeichen: Rollsplitt",
+        english_name="Supplementary Sign: Loose Gravel",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of loose stone chippings on the roadway surface.",
+        rules_and_fines="Speed adaptation required to prevent vehicle damage.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=146,
+        stvo_code="Sign 1053-33",
+        german_oﬃcial_name="Zusatzzeichen: Verschmutzte Fahrbahn",
+        english_name="Supplementary Sign: Dirty Roadway Surface",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of mud or dirt deposits on the roadway causing low traction.",
+        rules_and_fines="Speed adaptation required under StVO general rules.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=147,
+        stvo_code="Sign 1053-34",
+        german_oﬃcial_name="Zusatzzeichen: Rauch / Nebel",
+        english_name="Supplementary Sign: Smoke or Fog Hazard",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of frequent low visibility caused by fog or industrial smoke.",
+        rules_and_fines="Speed limit 50 km/h when visibility falls below 50m (§ 3 StVO).",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=148,
+        stvo_code="Sign 1053-35",
+        german_oﬃcial_name="Zusatzzeichen: Seitenwind",
+        english_name="Supplementary Sign: Crosswind Hazard",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Warns of strong lateral wind gusts on bridges or open stretches.",
+        rules_and_fines="Adapted speed required.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=149,
+        stvo_code="Sign 1060-30",
+        german_oﬃcial_name="Zusatzzeichen: Haltverbot auch auf dem Seitenstreifen",
+        english_name="Supplementary Sign: No Stopping on Hard Shoulder",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Extends stopping prohibition explicitly onto the shoulder area.",
+        rules_and_fines="Stopping on shoulder: fine starting from €25 up to towing.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=150,
+        stvo_code="Sign 1060-31",
+        german_oﬃcial_name="Zusatzzeichen: Parken auf dem Seitenstreifen erlaubt",
+        english_name="Supplementary Sign: Parking on Shoulder Allowed",
+        category="Supplementary Sign",
+        legal_reference="§ 39 Abs. 3 StVO",
+        explanation="Explicitly permits parking vehicles on the paved shoulder.",
+        rules_and_fines="Parking permitted within designated shoulder limits.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=151,
+        stvo_code="Sign 315-10",
+        german_oﬃcial_name="Parken auf Gehwegen (halb links)",
+        english_name="Park on Sidewalk (Half Left)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits vehicles under 2.8t to park half on the sidewalk on the left side.",
+        rules_and_fines="Vehicles over 2.8t or wrong alignment fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=152,
+        stvo_code="Sign 315-20",
+        german_oﬃcial_name="Parken auf Gehwegen (halb rechts)",
+        english_name="Park on Sidewalk (Half Right)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits vehicles under 2.8t to park half on the sidewalk on the right side.",
+        rules_and_fines="Vehicles over 2.8t or wrong alignment fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=153,
+        stvo_code="Sign 315-30",
+        german_oﬃcial_name="Parken auf Gehwegen (ganz links)",
+        english_name="Park on Sidewalk (Fully Left)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits vehicles under 2.8t to park completely on the sidewalk on the left.",
+        rules_and_fines="Obstruction of pedestrians or heavy vehicle parking fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=154,
+        stvo_code="Sign 315-40",
+        german_oﬃcial_name="Parken auf Gehwegen (ganz rechts)",
+        english_name="Park on Sidewalk (Fully Right)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits vehicles under 2.8t to park completely on the sidewalk on the right.",
+        rules_and_fines="Obstruction of pedestrians or heavy vehicle parking fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=155,
+        stvo_code="Sign 315-50",
+        german_oﬃcial_name="Parken auf Gehwegen (quer links)",
+        english_name="Park Perpendicular on Sidewalk (Left)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits perpendicular/transverse parking on the left sidewalk for vehicles < 2.8t.",
+        rules_and_fines="Incorrect parking orientation fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=156,
+        stvo_code="Sign 315-60",
+        german_oﬃcial_name="Parken auf Gehwegen (quer rechts)",
+        english_name="Park Perpendicular on Sidewalk (Right)",
+        category="Information / Regulatory",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 10)",
+        explanation="Permits perpendicular/transverse parking on the right sidewalk for vehicles < 2.8t.",
+        rules_and_fines="Incorrect parking orientation fined starting from €55.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=157,
+        stvo_code="Sign 350-20",
+        german_oﬃcial_name="Fußgängerüberweg (Doppelseitig)",
+        english_name="Pedestrian Crossing (Both Sides)",
+        category="Information / Directional",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 27)",
+        explanation="Indicates pedestrian crosswalk on multi-lane or dual-carriageway roads.",
+        rules_and_fines="Failure to stop for waiting pedestrians: €80 fine and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=158,
+        stvo_code="Sign 354",
+        german_oﬃcial_name="Wasserschutzgebiet",
+        english_name="Water Protection Area",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 29)",
+        explanation="Warns drivers they are entering an environmentally sensitive water catch basin.",
+        rules_and_fines="Heightened penalties for leaking hazardous fluids or oil spills.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=159,
+        stvo_code="Sign 358",
+        german_oﬃcial_name="Erste Hilfe",
+        english_name="First Aid Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 30)",
+        explanation="Indicates proximity of a first aid or medical emergency facility.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=160,
+        stvo_code="Sign 365-50",
+        german_oﬃcial_name="Pannenhilfe",
+        english_name="Breakdown Assistance",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 31)",
+        explanation="Indicates nearby phone or garage service for mechanical breakdowns.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=161,
+        stvo_code="Sign 365-51",
+        german_oﬃcial_name="Notrufsäule",
+        english_name="Emergency Call Box",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 32)",
+        explanation="Indicates presence of an emergency call box on highways or rural roads.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=162,
+        stvo_code="Sign 365-52",
+        german_oﬃcial_name="Tankstelle",
+        english_name="Filling Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 33)",
+        explanation="Indicates conventional fuel station ahead.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=163,
+        stvo_code="Sign 365-53",
+        german_oﬃcial_name="Ladestation für Elektrofahrzeuge",
+        english_name="Electric Vehicle Charging Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 33.1)",
+        explanation="Indicates charging infrastructure for battery electric vehicles.",
+        rules_and_fines="Non-EVs parking at charging spots: fine starting from €55 and potential towing.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=164,
+        stvo_code="Sign 365-54",
+        german_oﬃcial_name="Wasserstoﬀtankstelle",
+        english_name="Hydrogen Fueling Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 33.2)",
+        explanation="Indicates hydrogen (H2) refuel infrastructure for fuel cell vehicles.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=165,
+        stvo_code="Sign 365-55",
+        german_oﬃcial_name="Flüssigerdgastankstelle (LNG)",
+        english_name="LNG Fueling Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 33.3)",
+        explanation="Indicates liquefied natural gas (LNG) station for heavy transport.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=166,
+        stvo_code="Sign 365-56",
+        german_oﬃcial_name="Autogastankstelle (LPG)",
+        english_name="LPG Fueling Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 33.4)",
+        explanation="Indicates autogas/LPG refuel station.",
+        rules_and_fines="Informational only.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=167,
+        stvo_code="Sign 365-57",
+        german_oﬃcial_name="Wohnmobilplatz",
+        english_name="Caravan Site / RV Park",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 34)",
+        explanation="Indicates dedicated camping or motorhome parking area.",
+        rules_and_fines="Unauthorized standard parking may incur local administrative fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=168,
+        stvo_code="Sign 380",
+        german_oﬃcial_name="Richtgeschwindigkeit 130 km/h",
+        english_name="Advisory Speed 130 km/h",
+        category="Information / Recommendation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 38)",
+        explanation="Recommends maximum speed of 130 km/h under good conditions (German Autobahn).",
+        rules_and_fines="Not strictly illegal to exceed, but increases driver liability in accidents above 130 km/h.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=169,
+        stvo_code="Sign 381",
+        german_oﬃcial_name="Ende der Richtgeschwindigkeit",
+        english_name="End of Advisory Speed Limit",
+        category="Information / Recommendation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 38.1)",
+        explanation="Cancels previously posted advisory speed recommendation.",
+        rules_and_fines="General advisory or statutory rules resume.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=170,
+        stvo_code="Sign 390",
+        german_oﬃcial_name="Mautpflichtige Straße",
+        english_name="Toll Road Ahead",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 41)",
+        explanation="Indicates road segment requires toll payment (e.g. truck toll / LKW-Maut).",
+        rules_and_fines="Driving without paying toll: fine up to €200 plus toll fee.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=171,
+        stvo_code="Sign 391",
+        german_oﬃcial_name="Mautstelle",
+        english_name="Toll Plaza",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 42)",
+        explanation="Indicates proximity to physical toll collection booths.",
+        rules_and_fines="Passing toll booth without payment: penalty fines under BFrmG.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=172,
+        stvo_code="Sign 392",
+        german_oﬃcial_name="Zollstelle",
+        english_name="Customs Station",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 43)",
+        explanation="Indicates border customs inspection area ahead.",
+        rules_and_fines="Failing to stop when signaled by customs oﬃcer: heavy fine or arrest.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=173,
+        stvo_code="Sign 393",
+        german_oﬃcial_name="Informationstafel an Grenzübergängen",
+        english_name="Information Board at Border Crossings",
+        category="Information Sign",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 44)",
+        explanation="Displays general statutory speed limits of the entered country.",
+        rules_and_fines="Driver bound by national speed laws of entered state.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=174,
+        stvo_code="Sign 401",
+        german_oﬃcial_name="Nummernschild für Bundesstraßen",
+        english_name="Federal Highway Route Number",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 45)",
+        explanation="Identifies the number of the federal highway (Bundesstraße, e.g. B27).",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=175,
+        stvo_code="Sign 405",
+        german_oﬃcial_name="Nummernschild für Autobahnen",
+        english_name="Motorway Route Number",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 46)",
+        explanation="Identifies the number of the Autobahn (e.g. A8, A81).",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=176,
+        stvo_code="Sign 406",
+        german_oﬃcial_name="Knotenpunkttafel für Autobahnen",
+        english_name="Motorway Junction / Interchange Marker",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 47)",
+        explanation="Indicates the oﬃcial exit or interchange number on a motorway.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=177,
+        stvo_code="Sign 410",
+        german_oﬃcial_name="Ankündigungstafel für Autobahnen",
+        english_name="Advance Motorway Direction Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 48)",
+        explanation="Displays advance direction and lane destinations prior to a highway exit.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=178,
+        stvo_code="Sign 421",
+        german_oﬃcial_name="Wegweiser für bestimmten Fahrverkehr",
+        english_name="Direction Sign for Specific Traﬃc (e.g., Heavy Goods)",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 50)",
+        explanation="Directs specific vehicle types (e.g. trucks, dangerous cargo) along bypasses.",
+        rules_and_fines="Failure to follow compulsory truck routes where marked: fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=179,
+        stvo_code="Sign 422",
+        german_oﬃcial_name="Wegweiser für Umleitungen",
+        english_name="Detour Direction Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 51)",
+        explanation="Directs traﬃc along a designated detour route ('U-Nummer').",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=180,
+        stvo_code="Sign 432",
+        german_oﬃcial_name="Pfeilwegweiser zu innerörtlichen Zielen",
+        english_name="Inner-City Destination Pointer",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 53)",
+        explanation="Points directly toward specific local urban destinations (e.g., Bahnhof, Zentrum).",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=181,
+        stvo_code="Sign 434",
+        german_oﬃcial_name="Tabellenwegweiser",
+        english_name="Table Direction Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 54)",
+        explanation="Displays destinations and lane choices in a structured tabular format ahead of junction.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=182,
+        stvo_code="Sign 438",
+        german_oﬃcial_name="Vorwegweiser",
+        english_name="Advance Direction Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 55)",
+        explanation="Informs drivers in advance of upcoming intersection geometry and destination options.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=183,
+        stvo_code="Sign 439",
+        german_oﬃcial_name="Gliederung der Vorwegweiser",
+        english_name="Lane-Specific Advance Direction Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 56)",
+        explanation="Shows which specific lane leads to which highway destination.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=184,
+        stvo_code="Sign 448",
+        german_oﬃcial_name="Ankündigung der Ausfahrt auf Autobahnen",
+        english_name="Motorway Exit Announcement (1000m / 500m)",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 58)",
+        explanation="Announces upcoming motorway exit at specified distance (e.g. 1000m or 500m).",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=185,
+        stvo_code="Sign 449",
+        german_oﬃcial_name="Vorwegweiser auf Autobahnen",
+        english_name="Advance Direction Sign on Motorways",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 59)",
+        explanation="Large overhead gantry or roadside sign indicating destinations per motorway lane.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=186,
+        stvo_code="Sign 450-50",
+        german_oﬃcial_name="Ausfahrttafel auf Autobahnen",
+        english_name="Motorway Exit Sign at Deceleration Lane",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 60)",
+        explanation="Marks the exact start of the exit ramp/deceleration lane.",
+        rules_and_fines="Late cutting or abrupt exit turning across solid white lines fined starting from €90 and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=187,
+        stvo_code="Sign 454",
+        german_oﬃcial_name="Umleitungsankündigung",
+        english_name="Detour Announcement",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 61)",
+        explanation="Announces upcoming detour due to road closure ahead.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=188,
+        stvo_code="Sign 455.1",
+        german_oﬃcial_name="Anwendung der Umleitung",
+        english_name="Detour Route Sign ('U' Sign)",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 62)",
+        explanation="Directs traﬃc along sequential numbered detour paths (e.g., U4).",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=189,
+        stvo_code="Sign 457.1",
+        german_oﬃcial_name="Ende der Umleitung",
+        english_name="End of Detour",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 63)",
+        explanation="Marks the end of a designated detour route.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=190,
+        stvo_code="Sign 460",
+        german_oﬃcial_name="Bedarfsumleitung",
+        english_name="Emergency Bypass Route Sign",
+        category="Directional / Navigation",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 64)",
+        explanation="Permanent detour recommendation signs for congested motorway sections.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=191,
+        stvo_code="Sign 501",
+        german_oﬃcial_name="Überleitungstafel",
+        english_name="Lane Crossover Sign (Construction Zones)",
+        category="Traﬃc Control / Construction",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 66)",
+        explanation="Indicates shift or crossover of traﬃc lanes into opposing carriageway in roadwork zones.",
+        rules_and_fines="Violating temporary lane markings: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=192,
+        stvo_code="Sign 521",
+        german_oﬃcial_name="Fahrstreifentafel",
+        english_name="Lane Allocation Sign",
+        category="Traﬃc Control",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 67)",
+        explanation="Displays number of available lanes and their alignment direction ahead.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=193,
+        stvo_code="Sign 531",
+        german_oﬃcial_name="Einengungstafel",
+        english_name="Lane Reduction Sign",
+        category="Traﬃc Control",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 68)",
+        explanation="Indicates that one or more traﬃc lanes will end or merge.",
+        rules_and_fines="Zipper merge rule (§ 11 Abs. 4 StVO) mandatory at merge point; refusal to yield incurs fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=194,
+        stvo_code="Sign 551",
+        german_oﬃcial_name="Trennungs- und Zusammenfassungstafel",
+        english_name="Lane Split or Merge Diagram Sign",
+        category="Traﬃc Control",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 69)",
+        explanation="Shows structural splitting or joining of major lane groups ahead.",
+        rules_and_fines="Informational sign.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=195,
+        stvo_code="Sign 600",
+        german_oﬃcial_name="Absperrschranke",
+        english_name="Barrier / Barricade Gate",
+        category="Warning / Construction",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 1)",
+        explanation="Red and white striped barrier prohibiting entry across full or partial road width.",
+        rules_and_fines="Bypassing barricade gate: fine starting from €50 up to €200.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=196,
+        stvo_code="Sign 605",
+        german_oﬃcial_name="Leitbake",
+        english_name="Delineator Beacon / Chevron Board",
+        category="Warning / Construction",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 2)",
+        explanation="Directs traﬃc past work zones or obstacles. Slanted stripes point down toward drivable lane.",
+        rules_and_fines="Colliding with or disobeying beacons: fine starting from €35.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=197,
+        stvo_code="Sign 610",
+        german_oﬃcial_name="Leitkegel (Pylone)",
+        english_name="Traﬃc Cone",
+        category="Warning / Construction",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 4)",
+        explanation="Temporary cone used to demarcate hazard zones or temporary lane paths.",
+        rules_and_fines="Knocking over or passing cones unlawfully fined under safety regulations.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=198,
+        stvo_code="Sign 620",
+        german_oﬃcial_name="Leitpfosten",
+        english_name="Delineator Post (Roadside Reflector)",
+        category="Warning / Guidance",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 5)",
+        explanation="Roadside posts placed every 50m to delineate road edge (rectangular reflector right, twin dots left).",
+        rules_and_fines="Guidance marker.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=199,
+        stvo_code="Sign 625",
+        german_oﬃcial_name="Richtungstafel in Kurven",
+        english_name="Curve Direction Board (Chevron Alignment)",
+        category="Warning / Guidance",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 6)",
+        explanation="Large arrow board highlighting sharp curves or dangerous bends.",
+        rules_and_fines="Adapted speed mandatory.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=200,
+        stvo_code="Sign 626",
+        german_oﬃcial_name="Leitteil / Fahrbahntrenner",
+        english_name="Traﬃc Separator / Lane Channelizer",
+        category="Warning / Guidance",
+        legal_reference="§ 43 Abs. 3 StVO (Anlage 4 StVO, Lfd. Nr. 7)",
+        explanation="Physical plastic or concrete separators used to divide opposing or converging lanes.",
+        rules_and_fines="Driving over physical separators forbidden.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=201,
+        stvo_code="Sign 293",
+        german_oﬃcial_name="Fahrbahnmarkierung: Fußgängerüberweg (Zebrastreifen)",
+        english_name="Road Marking: Pedestrian Crosswalk (Zebra Crossing)",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 66)",
+        explanation="Transverse white stripe markings designating an oﬃcial pedestrian right-of-way crossing.",
+        rules_and_fines="Failing to allow pedestrian to cross: €80 fine and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=202,
+        stvo_code="Sign 294",
+        german_oﬃcial_name="Fahrbahnmarkierung: Haltlinie",
+        english_name="Road Marking: Stop Line",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 67)",
+        explanation="Solid transverse line indicating exact location where vehicle must stop at Stop signs or red signals.",
+        rules_and_fines="Crossing stop line on red signal: fine from €90 up to €360 and driving ban.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=203,
+        stvo_code="Sign 295",
+        german_oﬃcial_name="Fahrbahnmarkierung: Fahrstreifenbegrenzung / Durchgezogene Linie",
+        english_name="Road Marking: Solid Longitudinal Line",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 68)",
+        explanation="Continuous solid line separating opposing or parallel traﬃc. Crossing is strictly forbidden.",
+        rules_and_fines="Crossing solid line: fine starting from €30 up to €150.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=204,
+        stvo_code="Sign 296",
+        german_oﬃcial_name="Fahrbahnmarkierung: Einseitige Fahrstreifenbegrenzung",
+        english_name="Road Marking: Combined Solid and Broken Line",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 69)",
+        explanation="Composed of adjacent solid and broken lines; crossing is only allowed from the broken line side.",
+        rules_and_fines="Illegal crossing from solid side: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=205,
+        stvo_code="Sign 297",
+        german_oﬃcial_name="Fahrbahnmarkierung: Pfeilmarkierungen",
+        english_name="Road Marking: Lane Direction Arrows",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 70)",
+        explanation="Mandates driver to turn or proceed strictly in direction indicated by arrows in that lane.",
+        rules_and_fines="Turning contrary to lane arrow: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=206,
+        stvo_code="Sign 298",
+        german_oﬃcial_name="Fahrbahnmarkierung: Sperrfläche",
+        english_name="Road Marking: Hatched Neutral Zone / Restricted Area",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 71)",
+        explanation="Hatched diagonal line areas marked on pavement. Driving or stopping over them is prohibited.",
+        rules_and_fines="Driving over hatched area: fine starting from €30 up to €70.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=207,
+        stvo_code="Sign 299",
+        german_oﬃcial_name="Fahrbahnmarkierung: Grenzmarkierung für Halt- und Parkverbote",
+        english_name="Road Marking: Zig-zag Line (No Parking Zone)",
+        category="Road Marking / Regulatory",
+        legal_reference="§ 41 Abs. 1 StVO (Anlage 2 StVO, Lfd. Nr. 72)",
+        explanation="White zig-zag line extending no-stopping or no-parking zones (e.g. near bus stops).",
+        rules_and_fines="Parking on zig-zag lines: fine starting from €25 up to €50.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=208,
+        stvo_code="Sign 340",
+        german_oﬃcial_name="Fahrbahnmarkierung: Leitlinie (Unterbrochene Linie)",
+        english_name="Road Marking: Broken Center / Lane Line",
+        category="Road Marking / Guidance",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 22)",
+        explanation="Broken longitudinal line separating lanes; crossing is allowed when traﬃc permits safely.",
+        rules_and_fines="Endangering traﬃc during lane change: fine starting from €30.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=209,
+        stvo_code="Sign 341",
+        german_oﬃcial_name="Fahrbahnmarkierung: Wartelinie (Haifischzähne)",
+        english_name="Road Marking: Yield Line / Sharks Teeth",
+        category="Road Marking / Guidance",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 23)",
+        explanation="Row of white triangles indicating location where driver must give way.",
+        rules_and_fines="Failure to yield right of way: fine starting from €40 up to €120.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=210,
+        stvo_code="Sign 342",
+        german_oﬃcial_name="Fahrbahnmarkierung: Haifischzähne bei Rechts-vor-Links",
+        english_name="Road Marking: Priority Yield Triangles",
+        category="Road Marking / Guidance",
+        legal_reference="§ 42 Abs. 2 StVO (Anlage 3 StVO, Lfd. Nr. 24)",
+        explanation="Highlights yield obligation at priority intersections or bicycle crossings.",
+        rules_and_fines="Failure to yield: standard priority violation fines.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=211,
+        stvo_code="Signal Light Red",
+        german_oﬃcial_name="Lichtzeichenanlage: Rot",
+        english_name="Traﬃc Light: Red",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 StVO",
+        explanation="Mandates vehicles to stop before the intersection / stop line.",
+        rules_and_fines="Red light violation: €118 to €360 fine, 1-2 points, 1 month driving ban.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=212,
+        stvo_code="Signal Light Red-Yellow",
+        german_oﬃcial_name="Lichtzeichenanlage: Rot-Gelb",
+        english_name="Traﬃc Light: Red-Yellow",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 StVO",
+        explanation="Indicates green phase is imminent; vehicle must prepare to proceed but remain stopped.",
+        rules_and_fines="Prematurely driving into intersection before green: fine starting from €15.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=213,
+        stvo_code="Signal Light Green",
+        german_oﬃcial_name="Lichtzeichenanlage: Grün",
+        english_name="Traﬃc Light: Green",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 StVO",
+        explanation="Traﬃc may proceed straight or turn if intersection is clear.",
+        rules_and_fines="Block intersection on green phase: fine starting from €20.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=214,
+        stvo_code="Signal Light Yellow",
+        german_oﬃcial_name="Lichtzeichenanlage: Gelb",
+        english_name="Traﬃc Light: Yellow",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 StVO",
+        explanation="Warns signal is changing to red; stop if safe to do so without emergency braking.",
+        rules_and_fines="Failing to stop on yellow when safely possible: fine starting from €10 to €15.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=215,
+        stvo_code="Signal Light Flashing Yellow",
+        german_oﬃcial_name="Lichtzeichenanlage: Gelb blinkend",
+        english_name="Traﬃc Light: Flashing Yellow",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 StVO",
+        explanation="Traﬃc light is out of service or oﬀ-peak; traﬃc signs or general priority rules apply.",
+        rules_and_fines="Exercise extra caution; yield right-of-way per posted signs or § 8 StVO.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=216,
+        stvo_code="Signal Green Arrow Board",
+        german_oﬃcial_name="Grünpfeil-Blechschild (Sign 720)",
+        english_name="Permanent Green Arrow Sign",
+        category="Regulatory / Signal Supplement",
+        legal_reference="§ 37 Abs. 2 Nr. 1 StVO",
+        explanation="Permits right turn on red light after coming to a complete stop at the stop line first.",
+        rules_and_fines="Failure to stop completely before turning right on red arrow: €70 fine and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=217,
+        stvo_code="Signal Light Pedestrian Red",
+        german_oﬃcial_name="Fußgängerampel: Rot",
+        english_name="Pedestrian Signal: Red",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 Nr. 5 StVO",
+        explanation="Indicates pedestrians must not enter the crosswalk.",
+        rules_and_fines="Pedestrians crossing on red: €5 to €10 fine.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=218,
+        stvo_code="Signal Light Pedestrian Green",
+        german_oﬃcial_name="Fußgängerampel: Grün",
+        english_name="Pedestrian Signal: Green",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 Nr. 5 StVO",
+        explanation="Indicates pedestrians have right-of-way to cross.",
+        rules_and_fines="Turning drivers who endanger crossing pedestrians on green signal: €140 fine and 1 point.",
+    ),
+)
+(
+    TraﬃcSignClass(
+        gtsign_class_id=219,
+        stvo_code="Signal Light Bicycle Green",
+        german_oﬃcial_name="Fahrradampel: Grün",
+        english_name="Bicycle Signal: Green",
+        category="Signal / Control",
+        legal_reference="§ 37 Abs. 2 Nr. 6 StVO",
+        explanation="Indicates cyclists on bicycle lane have right-of-way to cross intersection.",
+        rules_and_fines="Drivers turning across active bicycle lane must yield; failure results in fines.",
+    ),
+)
+TraﬃcSignClass(
+    gtsign_class_id=220,
+    stvo_code="Sign Variable Message Sign",
+    german_oﬃcial_name="Wechselverkehrszeichen (Matrixanzeige)",
+    english_name="Variable Message Sign (LED Display)",
+    category="Variable / Dynamic Sign",
+    legal_reference="§ 39 Abs. 1a StVO",
+    explanation="Electronic overhead LED matrix sign displaying dynamic speed limits, warnings, or lane closures.",
+    rules_and_fines="Legally binding rules identical to static signs; non-compliance fines apply equally.",
+)
