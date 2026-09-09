@@ -50,13 +50,45 @@ if "messages" not in st.session_state:
 # --- Zwei Container nebeneinander: 80/20 ---
 col1, col2 = st.columns([4, 3])
 
+############################################
 with col1, st.container(border=True, height=700):
-    uploaded_video = st.file_uploader("upload video", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
+
     if uploaded_video is not None:
-        st.video(uploaded_video)
+        if st.button("Analyze Video"):
+            with st.spinner("Processing video on the backend..."):
+                try:
+                    # Send video to FastAPI backend
+                    files = {
+                        "file": (
+                            uploaded_video.name,
+                            uploaded_video.getvalue(),
+                            uploaded_video.type,
+                        )
+                    }
+                    response = requests.post(
+                        f"{API_BASE_URL}/analyze/video",
+                        files=files,
+                        timeout=300,
+                    )
+                    response.raise_for_status()
+
+                    # Render processed video bytes on screen
+                    st.success("Analysis complete!")
+                    st.video(response.content)
+
+                except requests.exceptions.RequestException as e:
+                    st.error(f"An error occurred while processing the video: {e}")
     else:
-        st.info("no video uploaded yet.")
+        st.info("No video uploaded yet.")
+
     st.button("Generate report")
+############################################
+
+
+
+
+
 
 with col2, st.container(border=True, height=700):
     st.subheader("Chatbot")

@@ -3,3 +3,18 @@ requests
 python-dotenv
 pillow
 pandas
+
+# Web Framework & API
+fastapi
+uvicorn
+python-multipart
+
+# AI & Computer Vision
+ultralytics
+opencv-python
+torch
+torchvision
+
+# Utilities
+python-dotenv
+pydantic
