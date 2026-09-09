@@ -57,7 +57,7 @@ Thumbs.db
 .streamlit/secrets.toml
 
 # --- Videos ---
-backend/pipelines/videos/
+backend/inputs/videos/
 *.mp4
 *.avi
 *.mov
