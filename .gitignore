@@ -68,5 +68,5 @@ backend/datasets/
 # --- Model Weights ---
 backend/model_weights/
 backup/
-+.backup
+*.backup
 
