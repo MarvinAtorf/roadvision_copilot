@@ -63,7 +63,7 @@ class TimelineFrame(BaseModel):
     )
 
 
-# analyzer betiğindeki import uyumluluğu için alias
+# For backward compatibility, we can alias TimelineFrame to TimelineEvent
 TimelineEvent = TimelineFrame
 
 
