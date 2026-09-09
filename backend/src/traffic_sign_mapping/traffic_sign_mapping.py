@@ -18,10 +18,20 @@ _mapping_by_id = _load_mapping()
 
 
 def lookup(open_cv_id: int) -> dict | None:
-    """Returns the mapping entry (stvo_id, value, time_stamp) for a given open_cv_id.
-
-    Returns None if the open_cv_id does not exist in the mapping.
     """
+    Provides a utility to look up a mapping by an OpenCV identifier.
+
+    The function searches for the given `open_cv_id` within the internal mapping
+    and returns the corresponding dictionary if it exists. If no match is found,
+    it returns `None`.
+
+    :param open_cv_id: Identifier associated with the desired mapping.
+    :type open_cv_id: int
+    :return: The dictionary associated with the given identifier, or `None` if
+        the identifier was not found.
+    :rtype: dict | None
+    """
+
     return _mapping_by_id.get(open_cv_id)
 
 
