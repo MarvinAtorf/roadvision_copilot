@@ -45,6 +45,7 @@ services:
       - STREAMLIT_SERVER_FILE_WATCHER_TYPE=poll
     volumes:
       - ./frontend:/app
+      - ./assets:/app/assets
     depends_on:
       - api
     networks:
