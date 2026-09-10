@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import chromadb
 from fastapi import FastAPI
-from routes import health, video
+from routes import chat, health, video
 
 logger = logging.getLogger("roadvision")
 
@@ -38,4 +38,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(video.router)
-# app.include_router(chat.router)  -- it will be included in the future when the chat functionality is implemented
+app.include_router(chat.router)
