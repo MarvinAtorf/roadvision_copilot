@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import chromadb
 from fastapi import FastAPI
-from backend.src.routes import health, video
+from routes import health, video
 
 logger = logging.getLogger("roadvision")
 
