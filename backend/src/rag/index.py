@@ -15,6 +15,7 @@ PARAGRAPH_REFERENCE_PATTERN = re.compile(
     r"(?:§|[Pp]aragraph(?:en)?|[Pp]aragraf(?:en)?)\s*(\d+[a-z]?)"
 )
 
+
 # Load the embedding model once at import time instead of on every request
 Settings.embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL_NAME)
 
