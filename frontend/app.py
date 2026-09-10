@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 import requests
 import streamlit as st
 
@@ -7,21 +7,32 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="RoadVision Copilot", page_icon="🚦", layout="wide")
 
+# CSS to remove top padding and vertical gaps completely
 st.markdown(
     """
     <style>
         .block-container {
-            padding-top: 4rem;
-            padding-bottom: 1rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
+            padding-top: 0rem !important;
+            padding-bottom: 1rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0rem !important;
+        }
+        .stImage {
+            margin-bottom: -1rem !important;
         }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# --- Backend-Status anzeigen ---
+# --- LOGO PATH (DIRECT RELATIVE PATH FOR GITHUB) ---
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LOGO_PATH = PROJECT_ROOT / "backend" / "data" / "logo.png"
+
+# --- DISPLAY BACKEND STATUS ---
 with st.sidebar:
     st.subheader("Backend Status")
     try:
@@ -41,16 +52,25 @@ with st.sidebar:
     except requests.exceptions.RequestException:
         st.error("Backend not reachable")
 
-st.title("🚦 Roadvision - Copilot")
-
-# --- Chat-Verlauf im Session State halten ---
+# --- STORE CHAT HISTORY IN SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- Zwei Container nebeneinander: 80/20 ---
-col1, col2 = st.columns([4, 3])
+# --- TOP SECTION (LOGO AT THE VERY TOP) ---
+header_col1, header_col2 = st.columns([4, 3])
 
+with header_col1:
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), width=650)
+    else:
+        st.warning(f"Logo not found at: {LOGO_PATH}")
+
+# --- BOTTOM SECTION (CONTAINERS PLACED DIRECTLY BELOW LOGO) ---
+col1, col2 = st.columns([4, 3], gap="small")
+
+# --- LEFT CONTAINER (VIDEO UPLOAD) ---
 with col1, st.container(border=True, height=700):
+    st.subheader("Traffic Analysis")
     uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
@@ -83,7 +103,7 @@ with col1, st.container(border=True, height=700):
 
     st.button("Generate report")
 
-
+# --- RIGHT CONTAINER (CHATBOT) ---
 with col2, st.container(border=True, height=700):
     st.subheader("Chatbot")
     chat_box = st.container(height=450)
