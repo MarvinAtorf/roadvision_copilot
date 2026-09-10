@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import requests
 import streamlit as st
 
@@ -12,7 +13,7 @@ st.markdown(
     """
     <style>
         .block-container {
-            padding-top: 0rem !important;
+            padding-top: 2rem !important;
             padding-bottom: 1rem !important;
             padding-left: 2rem !important;
             padding-right: 2rem !important;
@@ -32,7 +33,7 @@ st.markdown(
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent if CURRENT_DIR.name == "frontend" else CURRENT_DIR
 
-LOGO_PATH = PROJECT_ROOT / "backend" / "data" / "logo.png"
+LOGO_PATH = PROJECT_ROOT / "assets" / "logo.png"
 
 # --- DISPLAY BACKEND STATUS ---
 with st.sidebar:
