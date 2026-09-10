@@ -13,27 +13,22 @@ SYSTEM_PROMPT = (
     "Answer only questions related to these two topics; decline anything unrelated. "
     "Respond in English or German, depending on the language in which the question was asked. "
     "Be precise and factual. "
-    "If the relevant data has not been provided to you, say so honestly instead of guessing. "
-    "If you are not sure, answer with 'I don't know'."
+    "CRITICAL — never invent facts: only state specific details (dates, numbers, "
+    "paragraph references, sign numbers, deadlines, exceptions) that are explicitly "
+    "present in the provided context or conversation. Do not add plausible-sounding "
+    "additional examples, dates, or details from general knowledge to make an answer "
+    "seem more complete. If the provided context only partially answers the question, "
+    "answer with only what the context supports and explicitly say which part you "
+    "cannot confirm — do not fill the gap with unconfirmed information. "
+    "If the relevant data has not been provided to you at all, say so honestly instead "
+    "of guessing. If you are not sure, answer with 'I don't know'."
 )
 
 MAX_HISTORY_MESSAGES = 20  # last N messages to include
 
 
 def _build_context_block(context: list[dict]) -> str:
-    """
-    Constructs a context block from a list of dictionaries, where each dictionary
-    contains a paragraph identifier and corresponding text. Each resulting block
-    is formatted with the paragraph identifier enclosed in square brackets
-    followed by the associated text.
-
-    :param context: List of dictionaries where each dictionary must contain
-        the keys 'paragraph' (str) and 'text' (str).
-    :type context: list[dict]
-    :return: A single formatted string where each context element is separated
-        by two new lines.
-    :rtype: str
-    """
+    """Turn retrieved StVO paragraphs into a text block for the system prompt."""
     parts = [f"[{c['paragraph']}]\n{c['text']}" for c in context]
     return "\n\n".join(parts)
 
@@ -46,7 +41,9 @@ def ask(history: list[dict], context: list[dict] | None = None) -> str:
     if context:
         system_prompt += (
             "\n\nRelevant excerpts from the StVO (German Road Traffic Regulations) "
-            "that may help answer the question:\n\n" + _build_context_block(context)
+            "that may help answer the question. Only use facts stated in these "
+            "excerpts — do not add anything beyond what they say:\n\n"
+            + _build_context_block(context)
         )
 
     response: Message = client.messages.create(
