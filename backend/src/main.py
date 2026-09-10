@@ -3,6 +3,7 @@ import os
 import socket
 from contextlib import asynccontextmanager
 
+import chromadb
 from fastapi import FastAPI
 from routes import chat, health
 
@@ -28,6 +29,8 @@ async def lifespan(app: FastAPI):
 
     for name, status in app.state.service_status.items():
         (logger.info if status == "ok" else logger.warning)(f"{name}: {status}")
+
+    app.state.chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
 
     yield
 
