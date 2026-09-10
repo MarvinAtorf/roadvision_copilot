@@ -11,7 +11,9 @@ CHROMA_COLLECTION_NAME = "stvo_full"
 EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
 # Matches explicit paragraph references in a question, e.g. "§ 53" or "§53a"
-PARAGRAPH_REFERENCE_PATTERN = re.compile(r"§\s*(\d+[a-z]?)")
+PARAGRAPH_REFERENCE_PATTERN = re.compile(
+    r"(?:§|[Pp]aragraph(?:en)?|[Pp]aragraf(?:en)?)\s*(\d+[a-z]?)"
+)
 
 # Load the embedding model once at import time instead of on every request
 Settings.embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL_NAME)
