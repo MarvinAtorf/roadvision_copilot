@@ -64,7 +64,7 @@ header_col1, header_col2 = st.columns([4, 3])
 
 with header_col1:
     if LOGO_PATH.exists():
-        st.image(str(LOGO_PATH), width=650)
+        st.image(str(LOGO_PATH), width=506)
     else:
         st.warning(f"Logo not found at: {LOGO_PATH}")
 
