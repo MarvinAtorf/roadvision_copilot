@@ -4,14 +4,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse
-
-from backend.src.pipelines.video_traffic_analyzer import run_video_analysis
+from pipelines.video_traffic_analyzer import run_video_analysis
 
 router = APIRouter()
 
 
 @router.post("/analyze/video")
-async def analyze_video(file: UploadFile = File(...)): # noqa: B008
+async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
     # 1. Save the incoming video file to a temporary directory
     temp_dir = Path(tempfile.gettempdir())
     raw_path = temp_dir / f"raw_{file.filename}"
