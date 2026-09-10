@@ -29,7 +29,9 @@ st.markdown(
 )
 
 # --- LOGO PATH (DIRECT RELATIVE PATH FOR GITHUB) ---
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parent if CURRENT_DIR.name == "frontend" else CURRENT_DIR
+
 LOGO_PATH = PROJECT_ROOT / "backend" / "data" / "logo.png"
 
 # --- DISPLAY BACKEND STATUS ---
