@@ -108,7 +108,10 @@ with col1, st.container(border=True, height=700):
 
 # --- RIGHT CONTAINER (CHATBOT) ---
 with col2, st.container(border=True, height=700):
-    st.subheader("Chatbot")
+    chatbot_title_col, chatbot_spinner_col = st.columns([3, 1])
+    with chatbot_title_col:
+        st.subheader("Chatbot")
+
     chat_box = st.container(height=450)
     with chat_box:
         for msg in st.session_state.messages:
@@ -120,17 +123,20 @@ with col2, st.container(border=True, height=700):
         with chat_box, st.chat_message("user"):
             st.markdown(prompt)
 
-        try:
-            response = requests.post(
-                f"{API_BASE_URL}/chat",
-                json={"messages": st.session_state.messages},
-                timeout=15,
-            )
-            response.raise_for_status()
-            answer = response.json().get("answer", "no answer received.")
-        except requests.exceptions.RequestException:
-            answer = "⚠️ Backend not reachable."
+        with chatbot_spinner_col, st.spinner("Thinking..."):
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/chat",
+                    json={"messages": st.session_state.messages},
+                    timeout=15,
+                )
+                response.raise_for_status()
+                answer = response.json().get("answer", "No answer received.")
+            except requests.exceptions.RequestException:
+                answer = "⚠️ Backend not reachable."
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
         with chat_box, st.chat_message("assistant"):
             st.markdown(answer)
+
+    st.info("this is a chatbot and not a real lawyer")
