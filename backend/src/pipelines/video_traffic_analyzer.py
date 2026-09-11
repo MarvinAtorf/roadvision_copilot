@@ -1,5 +1,4 @@
 import json
-import shutil
 from pathlib import Path
 
 import cv2
@@ -11,22 +10,10 @@ from ultralytics import YOLO
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-INPUT_VIDEO = (
-    PROJECT_ROOT
-    / "backend"
-    / "inputs"
-    / "videos"
-    / "raw_videos"
-    / "63621-506830674.mp4"
-)
+INPUT_VIDEO = PROJECT_ROOT / "backend" / "inputs" / "videos" / "raw_videos" / "63621-506830674.mp4"
 
 OUTPUT_VIDEO = (
-    PROJECT_ROOT
-    / "backend"
-    / "inputs"
-    / "videos"
-    / "processed_videos"
-    / "output_counted.mp4"
+    PROJECT_ROOT / "backend" / "inputs" / "videos" / "processed_videos" / "output_counted.mp4"
 )
 
 OUTPUT_JSON = (
@@ -99,6 +86,7 @@ DEDUP_IOU_THRESHOLD = 0.60
 # HELPER FUNCTIONS
 # ============================================================
 
+
 def box_center(box):
     """
     Return normalized center coordinates of a bounding box.
@@ -146,9 +134,7 @@ def calculate_iou(box_a, box_b):
         intersection_y2 - intersection_y1,
     )
 
-    intersection_area = (
-        intersection_width * intersection_height
-    )
+    intersection_area = intersection_width * intersection_height
 
     area_a = box_area(box_a)
     area_b = box_area(box_b)
@@ -202,17 +188,11 @@ def calculate_identity_score(
 
         size_similarity = min(
             area_ratio,
-            1.0 / area_ratio
-            if area_ratio > 0
-            else 0.0,
+            1.0 / area_ratio if area_ratio > 0 else 0.0,
         )
 
     # Weighted identity score
-    score = (
-        0.50 * iou
-        + 0.30 * (1.0 - min(center_distance, 1.0))
-        + 0.20 * size_similarity
-    )
+    score = 0.50 * iou + 0.30 * (1.0 - min(center_distance, 1.0)) + 0.20 * size_similarity
 
     return score
 
@@ -248,7 +228,6 @@ def match_existing_identity(
     best_score = -1.0
 
     for canonical_id, identity in candidates.items():
-
         previous_box = identity["box"]
         previous_area = identity["area"]
 
@@ -257,17 +236,11 @@ def match_existing_identity(
             previous_box,
         )
 
-        area_ratio = (
-            current_area / previous_area
-            if previous_area > 0
-            else 0.0
-        )
+        area_ratio = current_area / previous_area if previous_area > 0 else 0.0
 
         size_similarity = min(
             area_ratio,
-            1.0 / area_ratio
-            if area_ratio > 0
-            else 0.0,
+            1.0 / area_ratio if area_ratio > 0 else 0.0,
         )
 
         score = calculate_identity_score(
@@ -284,10 +257,7 @@ def match_existing_identity(
         ):
             return canonical_id
 
-        if (
-            score >= match_threshold
-            and score > best_score
-        ):
+        if score >= match_threshold and score > best_score:
             best_score = score
             best_id = canonical_id
 
@@ -322,16 +292,11 @@ def deduplicate_frame_detections(
     kept = []
 
     for detection in detections:
-
         duplicate = False
 
         for existing in kept:
-
             # Only compare detections of the same class
-            if (
-                detection["class_id"]
-                != existing["class_id"]
-            ):
+            if detection["class_id"] != existing["class_id"]:
                 continue
 
             iou = calculate_iou(
@@ -361,11 +326,7 @@ def blend_box(
     if previous_box is None:
         return current_box
 
-    return [
-        alpha * current_box[i]
-        + (1.0 - alpha) * previous_box[i]
-        for i in range(4)
-    ]
+    return [alpha * current_box[i] + (1.0 - alpha) * previous_box[i] for i in range(4)]
 
 
 def resolve_canonical_id(
@@ -393,16 +354,10 @@ def resolve_canonical_id(
     # --------------------------------------------------------
 
     if max_gap_seconds is not None:
-
         expired_ids = []
 
         for canonical_id, identity in canonical_tracks.items():
-
-            if (
-                current_time
-                - identity["last_seen"]
-                > max_gap_seconds
-            ):
+            if current_time - identity["last_seen"] > max_gap_seconds:
                 expired_ids.append(canonical_id)
 
         for canonical_id in expired_ids:
@@ -437,7 +392,6 @@ def resolve_canonical_id(
     # --------------------------------------------------------
 
     if matched_id is not None:
-
         identity = canonical_tracks[matched_id]
 
         identity["box"] = blend_box(
@@ -446,15 +400,11 @@ def resolve_canonical_id(
             ema_alpha,
         )
 
-        identity["area"] = box_area(
-            identity["box"]
-        )
+        identity["area"] = box_area(identity["box"])
 
         identity["last_seen"] = current_time
 
-        identity["confidence"] = detection[
-            "confidence"
-        ]
+        identity["confidence"] = detection["confidence"]
 
         return matched_id, next_id
 
@@ -483,8 +433,8 @@ def resolve_canonical_id(
 # MAIN
 # ============================================================
 
-def main():
 
+def main():
     print("=" * 70)
     print("ROADVISION COPILOT - VIDEO ANALYSIS")
     print("=" * 70)
@@ -494,14 +444,10 @@ def main():
     # --------------------------------------------------------
 
     if not INPUT_VIDEO.exists():
-        raise FileNotFoundError(
-            f"Input video not found:\n{INPUT_VIDEO}"
-        )
+        raise FileNotFoundError(f"Input video not found:\n{INPUT_VIDEO}")
 
     if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            f"YOLO model not found:\n{MODEL_PATH}"
-        )
+        raise FileNotFoundError(f"YOLO model not found:\n{MODEL_PATH}")
 
     OUTPUT_VIDEO.parent.mkdir(
         parents=True,
@@ -520,63 +466,35 @@ def main():
     # Open video
     # --------------------------------------------------------
 
-    cap = cv2.VideoCapture(
-        str(INPUT_VIDEO)
-    )
+    cap = cv2.VideoCapture(str(INPUT_VIDEO))
 
     if not cap.isOpened():
-        raise RuntimeError(
-            f"Could not open video:\n{INPUT_VIDEO}"
-        )
+        raise RuntimeError(f"Could not open video:\n{INPUT_VIDEO}")
 
-    fps = cap.get(
-        cv2.CAP_PROP_FPS
-    )
+    fps = cap.get(cv2.CAP_PROP_FPS)
 
-    total_frames_in_video = int(
-        cap.get(
-            cv2.CAP_PROP_FRAME_COUNT
-        )
-    )
+    total_frames_in_video = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    width = int(
-        cap.get(
-            cv2.CAP_PROP_FRAME_WIDTH
-        )
-    )
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    height = int(
-        cap.get(
-            cv2.CAP_PROP_FRAME_HEIGHT
-        )
-    )
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     if fps <= 0:
-        raise RuntimeError(
-            "Invalid FPS detected."
-        )
+        raise RuntimeError("Invalid FPS detected.")
 
-    video_duration = (
-        total_frames_in_video / fps
-    )
+    video_duration = total_frames_in_video / fps
 
     print("\nVideo information:")
     print(f"  Resolution: {width} x {height}")
     print(f"  FPS: {fps:.2f}")
-    print(
-        f"  Frames: {total_frames_in_video}"
-    )
-    print(
-        f"  Duration: {video_duration:.2f} sec"
-    )
+    print(f"  Frames: {total_frames_in_video}")
+    print(f"  Duration: {video_duration:.2f} sec")
 
     # --------------------------------------------------------
     # Video writer
     # --------------------------------------------------------
 
-    fourcc = cv2.VideoWriter_fourcc(
-        *"mp4v"
-    )
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     writer = cv2.VideoWriter(
         str(OUTPUT_VIDEO),
@@ -588,10 +506,7 @@ def main():
     if not writer.isOpened():
         cap.release()
 
-        raise RuntimeError(
-            f"Could not create output video:\n"
-            f"{OUTPUT_VIDEO}"
-        )
+        raise RuntimeError(f"Could not create output video:\n{OUTPUT_VIDEO}")
 
     # ========================================================
     # TRACKING STATE
@@ -618,7 +533,6 @@ def main():
     # ========================================================
 
     while True:
-
         success, frame = cap.read()
 
         if not success:
@@ -628,15 +542,13 @@ def main():
 
         current_frame_number = processed_frames
 
-        timestamp_seconds = (
-            current_frame_number - 1
-        ) / fps
+        timestamp_seconds = (current_frame_number - 1) / fps
 
         # ----------------------------------------------------
         # YOLO TRACK
         # ----------------------------------------------------
 
-       # Run YOLO inference on the current frame
+        # Run YOLO inference on the current frame
         results = model(frame, classes=TRACKED_CLASSES, verbose=False)
 
         raw_detections = []
@@ -646,30 +558,21 @@ def main():
         # ----------------------------------------------------
 
         if results:
-
             result = results[0]
 
             if result.boxes is not None:
-
                 boxes = result.boxes
 
                 xyxy = boxes.xyxy.cpu().numpy()
 
-                class_ids = (
-                    boxes.cls.cpu().numpy().astype(int)
-                )
+                class_ids = boxes.cls.cpu().numpy().astype(int)
 
-                confidences = (
-                    boxes.conf.cpu().numpy()
-                )
+                confidences = boxes.conf.cpu().numpy()
 
                 for i in range(len(xyxy)):
-
                     class_id = class_ids[i]
 
-                    confidence = float(
-                        confidences[i]
-                    )
+                    confidence = float(confidences[i])
 
                     x1, y1, x2, y2 = xyxy[i]
 
@@ -681,16 +584,9 @@ def main():
                     ]
 
                     if class_id in VEHICLE_CLASSES:
+                        class_name = VEHICLE_CLASSES[class_id]
 
-                        class_name = VEHICLE_CLASSES[
-                            class_id
-                        ]
-
-                    elif (
-                        class_id
-                        == TRAFFIC_LIGHT_CLASS
-                    ):
-
+                    elif class_id == TRAFFIC_LIGHT_CLASS:
                         class_name = "traffic_light"
 
                     else:
@@ -709,11 +605,7 @@ def main():
         # Deduplicate same-frame detections
         # ----------------------------------------------------
 
-        detections = (
-            deduplicate_frame_detections(
-                raw_detections
-            )
-        )
+        detections = deduplicate_frame_detections(raw_detections)
 
         # ====================================================
         # CURRENT FRAME DATA
@@ -727,84 +619,63 @@ def main():
         # ====================================================
 
         for detection in detections:
-
-            class_id = detection[
-                "class_id"
-            ]
+            class_id = detection["class_id"]
 
             # ------------------------------------------------
             # VEHICLES
             # ------------------------------------------------
 
             if class_id in VEHICLE_CLASSES:
-
-                canonical_id, next_vehicle_id = (
-                    resolve_canonical_id(
-                        detection=detection,
-                        canonical_tracks=canonical_vehicle_tracks,
-                        next_id=next_vehicle_id,
-                        current_time=timestamp_seconds,
-                        image_width=width,
-                        image_height=height,
-                        match_threshold=VEHICLE_MATCH_THRESHOLD,
-                        near_distance_threshold=VEHICLE_NEAR_DISTANCE,
-                        size_similarity_threshold=VEHICLE_SIZE_SIMILARITY,
-                        ema_alpha=VEHICLE_EMA_ALPHA,
-                        max_gap_seconds=VEHICLE_GAP_SECONDS,
-                    )
+                canonical_id, next_vehicle_id = resolve_canonical_id(
+                    detection=detection,
+                    canonical_tracks=canonical_vehicle_tracks,
+                    next_id=next_vehicle_id,
+                    current_time=timestamp_seconds,
+                    image_width=width,
+                    image_height=height,
+                    match_threshold=VEHICLE_MATCH_THRESHOLD,
+                    near_distance_threshold=VEHICLE_NEAR_DISTANCE,
+                    size_similarity_threshold=VEHICLE_SIZE_SIMILARITY,
+                    ema_alpha=VEHICLE_EMA_ALPHA,
+                    max_gap_seconds=VEHICLE_GAP_SECONDS,
                 )
 
-                detection["canonical_id"] = (
-                    canonical_id
-                )
+                detection["canonical_id"] = canonical_id
 
-                current_vehicle_detections.append(
-                    detection
-                )
+                current_vehicle_detections.append(detection)
 
             # ------------------------------------------------
             # TRAFFIC LIGHTS
             # ------------------------------------------------
 
             elif class_id == TRAFFIC_LIGHT_CLASS:
-
-                canonical_id, next_traffic_light_id = (
-                    resolve_canonical_id(
-                        detection=detection,
-                        canonical_tracks=canonical_traffic_light_tracks,
-                        next_id=next_traffic_light_id,
-                        current_time=timestamp_seconds,
-                        image_width=width,
-                        image_height=height,
-                        match_threshold=TRAFFIC_LIGHT_MATCH_THRESHOLD,
-                        near_distance_threshold=TRAFFIC_LIGHT_NEAR_DISTANCE,
-                        size_similarity_threshold=TRAFFIC_LIGHT_SIZE_SIMILARITY,
-                        ema_alpha=TRAFFIC_LIGHT_EMA_ALPHA,
-                        max_gap_seconds=TRAFFIC_LIGHT_GAP_SECONDS,
-                    )
+                canonical_id, next_traffic_light_id = resolve_canonical_id(
+                    detection=detection,
+                    canonical_tracks=canonical_traffic_light_tracks,
+                    next_id=next_traffic_light_id,
+                    current_time=timestamp_seconds,
+                    image_width=width,
+                    image_height=height,
+                    match_threshold=TRAFFIC_LIGHT_MATCH_THRESHOLD,
+                    near_distance_threshold=TRAFFIC_LIGHT_NEAR_DISTANCE,
+                    size_similarity_threshold=TRAFFIC_LIGHT_SIZE_SIMILARITY,
+                    ema_alpha=TRAFFIC_LIGHT_EMA_ALPHA,
+                    max_gap_seconds=TRAFFIC_LIGHT_GAP_SECONDS,
                 )
 
-                detection["canonical_id"] = (
-                    canonical_id
-                )
+                detection["canonical_id"] = canonical_id
 
-                current_traffic_light_detections.append(
-                    detection
-                )
+                current_traffic_light_detections.append(detection)
 
         # ====================================================
         # UPDATE VEHICLE COUNTS
         # ====================================================
 
         # Number of active vehicles in current frame
-        active_vehicle_count = len(
-            current_vehicle_detections
-        )
+        active_vehicle_count = len(current_vehicle_detections)
 
         if active_vehicle_count > max_active_vehicles:
-            max_active_vehicles = (
-                active_vehicle_count
-            )
+            max_active_vehicles = active_vehicle_count
 
         # Count unique vehicles by class
         #
@@ -813,10 +684,7 @@ def main():
         #
         # This avoids counting the same vehicle multiple times.
 
-        {
-            detection["canonical_id"]
-            for detection in current_vehicle_detections
-        }
+        {detection["canonical_id"] for detection in current_vehicle_detections}
 
         # ----------------------------------------------------
         # Build vehicle class counts from canonical tracks
@@ -825,34 +693,21 @@ def main():
         unique_vehicle_class_counts = dict.fromkeys(VEHICLE_CLASSES.values(), 0)
 
         for identity in canonical_vehicle_tracks.values():
-
             class_name = identity["class_name"]
 
             if class_name in unique_vehicle_class_counts:
+                unique_vehicle_class_counts[class_name] += 1
 
-                unique_vehicle_class_counts[
-                    class_name
-                ] += 1
-
-        vehicle_counts = (
-            unique_vehicle_class_counts
-        )
+        vehicle_counts = unique_vehicle_class_counts
 
         # ====================================================
         # TRAFFIC LIGHT COUNT
         # ====================================================
 
-        visible_traffic_light_count = len(
-            current_traffic_light_detections
-        )
+        visible_traffic_light_count = len(current_traffic_light_detections)
 
-        if (
-            visible_traffic_light_count
-            > max_visible_traffic_lights
-        ):
-            max_visible_traffic_lights = (
-                visible_traffic_light_count
-            )
+        if visible_traffic_light_count > max_visible_traffic_lights:
+            max_visible_traffic_lights = visible_traffic_light_count
 
         # ====================================================
         # JSON DETECTION OBJECTS
@@ -861,43 +716,29 @@ def main():
         vehicle_json_detections = []
 
         for detection in current_vehicle_detections:
-
             vehicle_json_detections.append(
                 {
-                    "track_id": int(
-                        detection["canonical_id"]
-                    ),
-                    "class": detection[
-                        "class_name"
-                    ],
+                    "track_id": int(detection["canonical_id"]),
+                    "class": detection["class_name"],
                     "confidence": round(
                         detection["confidence"],
                         4,
                     ),
-                    "bbox": [
-                        round(value, 2)
-                        for value in detection["box"]
-                    ],
+                    "bbox": [round(value, 2) for value in detection["box"]],
                 }
             )
 
         traffic_light_json_detections = []
 
         for detection in current_traffic_light_detections:
-
             traffic_light_json_detections.append(
                 {
-                    "track_id": int(
-                        detection["canonical_id"]
-                    ),
+                    "track_id": int(detection["canonical_id"]),
                     "confidence": round(
                         detection["confidence"],
                         4,
                     ),
-                    "bbox": [
-                        round(value, 2)
-                        for value in detection["box"]
-                    ],
+                    "bbox": [round(value, 2) for value in detection["box"]],
                 }
             )
 
@@ -910,33 +751,20 @@ def main():
                 timestamp_seconds,
                 3,
             ),
-
             "frame_number": current_frame_number,
-
-            "traffic_density": {
-                "active_vehicles": active_vehicle_count
-            },
-
+            "traffic_density": {"active_vehicles": active_vehicle_count},
             "vehicles": {
                 "active_count": active_vehicle_count,
                 "detections": vehicle_json_detections,
             },
-
             "traffic_lights": {
                 "visible_count": visible_traffic_light_count,
-                "detections": (
-                    traffic_light_json_detections
-                ),
+                "detections": (traffic_light_json_detections),
             },
-
-            "traffic_signs": {
-                "detections": []
-            },
+            "traffic_signs": {"detections": []},
         }
 
-        timeline.append(
-            timeline_entry
-        )
+        timeline.append(timeline_entry)
 
         # ====================================================
         # DRAW ANNOTATIONS
@@ -949,23 +777,16 @@ def main():
         # ----------------------------------------------------
 
         for detection in current_vehicle_detections:
-
             x1, y1, x2, y2 = map(
                 int,
                 detection["box"],
             )
 
-            track_id = detection[
-                "canonical_id"
-            ]
+            track_id = detection["canonical_id"]
 
-            class_name = detection[
-                "class_name"
-            ]
+            class_name = detection["class_name"]
 
-            confidence = detection[
-                "confidence"
-            ]
+            confidence = detection["confidence"]
 
             cv2.rectangle(
                 annotated_frame,
@@ -975,11 +796,7 @@ def main():
                 3,
             )
 
-            label = (
-                f"{class_name} "
-                f"ID:{track_id} "
-                f"{confidence:.2f}"
-            )
+            label = f"{class_name} ID:{track_id} {confidence:.2f}"
 
             cv2.putText(
                 annotated_frame,
@@ -997,19 +814,14 @@ def main():
         # ----------------------------------------------------
 
         for detection in current_traffic_light_detections:
-
             x1, y1, x2, y2 = map(
                 int,
                 detection["box"],
             )
 
-            track_id = detection[
-                "canonical_id"
-            ]
+            track_id = detection["canonical_id"]
 
-            confidence = detection[
-                "confidence"
-            ]
+            confidence = detection["confidence"]
 
             cv2.rectangle(
                 annotated_frame,
@@ -1019,11 +831,7 @@ def main():
                 3,
             )
 
-            label = (
-                f"traffic_light "
-                f"ID:{track_id} "
-                f"{confidence:.2f}"
-            )
+            label = f"traffic_light ID:{track_id} {confidence:.2f}"
 
             cv2.putText(
                 annotated_frame,
@@ -1058,68 +866,30 @@ def main():
 
         alpha = 0.80
 
-        annotated_frame[
-            :dashboard_height,
-            :
-        ] = cv2.addWeighted(
+        annotated_frame[:dashboard_height, :] = cv2.addWeighted(
             overlay,
             alpha,
-            annotated_frame[
-                :dashboard_height,
-                :
-            ],
+            annotated_frame[:dashboard_height, :],
             1 - alpha,
             0,
         )
 
         dashboard_lines = [
-            (
-                f"Frame: "
-                f"{current_frame_number}/"
-                f"{total_frames_in_video}"
-            ),
-            (
-                f"Time: "
-                f"{timestamp_seconds:.2f}s"
-            ),
-            (
-                f"Active vehicles: "
-                f"{active_vehicle_count}"
-            ),
-            (
-                f"Unique vehicles: "
-                f"{len(canonical_vehicle_tracks)}"
-            ),
-            (
-                f"Cars: "
-                f"{vehicle_counts['car']}"
-            ),
-            (
-                f"Trucks: "
-                f"{vehicle_counts['truck']}"
-            ),
-            (
-                f"Buses: "
-                f"{vehicle_counts['bus']}"
-            ),
-            (
-                f"Motorbikes: "
-                f"{vehicle_counts['motorbike']}"
-            ),
-            (
-                f"Bicycles: "
-                f"{vehicle_counts['bicycle']}"
-            ),
-            (
-                f"Traffic lights: "
-                f"{visible_traffic_light_count}"
-            ),
+            (f"Frame: {current_frame_number}/{total_frames_in_video}"),
+            (f"Time: {timestamp_seconds:.2f}s"),
+            (f"Active vehicles: {active_vehicle_count}"),
+            (f"Unique vehicles: {len(canonical_vehicle_tracks)}"),
+            (f"Cars: {vehicle_counts['car']}"),
+            (f"Trucks: {vehicle_counts['truck']}"),
+            (f"Buses: {vehicle_counts['bus']}"),
+            (f"Motorbikes: {vehicle_counts['motorbike']}"),
+            (f"Bicycles: {vehicle_counts['bicycle']}"),
+            (f"Traffic lights: {visible_traffic_light_count}"),
         ]
 
         y_position = 30
 
         for line in dashboard_lines:
-
             cv2.putText(
                 annotated_frame,
                 line,
@@ -1137,33 +907,19 @@ def main():
         # WRITE FRAME
         # ====================================================
 
-        writer.write(
-            annotated_frame
-        )
+        writer.write(annotated_frame)
 
         # ----------------------------------------------------
         # Progress
         # ----------------------------------------------------
 
-        if (
-            processed_frames % 100 == 0
-            or processed_frames
-            == total_frames_in_video
-        ):
-
+        if processed_frames % 100 == 0 or processed_frames == total_frames_in_video:
             progress = (
-                processed_frames
-                / total_frames_in_video
-                * 100
-                if total_frames_in_video > 0
-                else 0
+                processed_frames / total_frames_in_video * 100 if total_frames_in_video > 0 else 0
             )
 
             print(
-                f"\rProcessing: "
-                f"{processed_frames}/"
-                f"{total_frames_in_video} "
-                f"({progress:.1f}%)",
+                f"\rProcessing: {processed_frames}/{total_frames_in_video} ({progress:.1f}%)",
                 end="",
             )
 
@@ -1180,11 +936,7 @@ def main():
     # FINAL JSON
     # ========================================================
 
-    final_duration_seconds = (
-        processed_frames / fps
-        if fps > 0
-        else 0
-    )
+    final_duration_seconds = processed_frames / fps if fps > 0 else 0
 
     # --------------------------------------------------------
     # Final vehicle counts
@@ -1193,87 +945,44 @@ def main():
     final_vehicle_counts = dict.fromkeys(VEHICLE_CLASSES.values(), 0)
 
     for identity in canonical_vehicle_tracks.values():
-
-        class_name = identity[
-            "class_name"
-        ]
+        class_name = identity["class_name"]
 
         if class_name in final_vehicle_counts:
-
-            final_vehicle_counts[
-                class_name
-            ] += 1
+            final_vehicle_counts[class_name] += 1
 
     # --------------------------------------------------------
     # JSON structure
     # --------------------------------------------------------
 
     analysis = {
-
         "video_metadata": {
-
-            "video_path": str(
-                INPUT_VIDEO
-            ),
-
+            "video_path": str(INPUT_VIDEO),
             "fps": round(
                 fps,
                 3,
             ),
-
             "width": width,
-
             "height": height,
-
-            "total_frames_in_video": (
-                total_frames_in_video
-            ),
-
-            "frames_processed": (
-                processed_frames
-            ),
-
+            "total_frames_in_video": (total_frames_in_video),
+            "frames_processed": (processed_frames),
             "duration_seconds": round(
                 final_duration_seconds,
                 3,
             ),
         },
-
         "vehicle_analysis": {
-
-            "total_unique_vehicles": len(
-                canonical_vehicle_tracks
-            ),
-
-            "vehicle_counts": (
-                final_vehicle_counts
-            ),
-
-            "max_active_vehicles": (
-                max_active_vehicles
-            ),
+            "total_unique_vehicles": len(canonical_vehicle_tracks),
+            "vehicle_counts": (final_vehicle_counts),
+            "max_active_vehicles": (max_active_vehicles),
         },
-
         "traffic_light_analysis": {
-
-            "total_tracked_traffic_lights": len(
-                canonical_traffic_light_tracks
-            ),
-
-            "max_visible_simultaneously": (
-                max_visible_traffic_lights
-            ),
+            "total_tracked_traffic_lights": len(canonical_traffic_light_tracks),
+            "max_visible_simultaneously": (max_visible_traffic_lights),
         },
-
         "traffic_sign_analysis": {
-
-            "status": (
-                "not_implemented_in_mvp"
-            ),
-
+            "status": ("not_implemented_in_mvp"),
             "detections": [],
         },
-
         "timeline": timeline,
     }
 
@@ -1286,7 +995,6 @@ def main():
         "w",
         encoding="utf-8",
     ) as json_file:
-
         json.dump(
             analysis,
             json_file,
@@ -1302,42 +1010,22 @@ def main():
     print("PROCESSING COMPLETE")
     print("=" * 70)
 
-    print(
-        f"\nProcessed frames: "
-        f"{processed_frames}"
-    )
+    print(f"\nProcessed frames: {processed_frames}")
 
-    print(
-        f"Unique vehicles: "
-        f"{len(canonical_vehicle_tracks)}"
-    )
+    print(f"Unique vehicles: {len(canonical_vehicle_tracks)}")
 
-    print(
-        f"Max active vehicles: "
-        f"{max_active_vehicles}"
-    )
+    print(f"Max active vehicles: {max_active_vehicles}")
 
-    print(
-        f"Tracked traffic lights: "
-        f"{len(canonical_traffic_light_tracks)}"
-    )
+    print(f"Tracked traffic lights: {len(canonical_traffic_light_tracks)}")
 
-    print(
-        f"Max visible traffic lights: "
-        f"{max_visible_traffic_lights}"
-    )
+    print(f"Max visible traffic lights: {max_visible_traffic_lights}")
 
-    print(
-        f"\nOutput video:\n"
-        f"{OUTPUT_VIDEO}"
-    )
+    print(f"\nOutput video:\n{OUTPUT_VIDEO}")
 
-    print(
-        f"\nOutput JSON:\n"
-        f"{OUTPUT_JSON}"
-    )
+    print(f"\nOutput JSON:\n{OUTPUT_JSON}")
 
     print("=" * 70)
+
 
 # ============================================================
 # STREAMLIT UPLOADER
@@ -1368,7 +1056,6 @@ def run_video_analysis(input_video_path: str, output_video_path: str) -> dict:
         tracked_classes=None,
         confidence_threshold: float = 0.25,
     ) -> dict:
-
         # Update global paths used by main()
         global INPUT_VIDEO, OUTPUT_VIDEO, OUTPUT_JSON
 
@@ -1399,12 +1086,37 @@ def run_video_analysis(input_video_path: str, output_video_path: str) -> dict:
         confidence_threshold=CONFIDENCE_THRESHOLD,
     )
 
+    # Re-encode to H.264 so browsers can actually play the file
+    # (cv2.VideoWriter with 'mp4v' produces a .mp4 that most browsers reject)
+    import subprocess
+
+    h264_path = output_path.with_stem(output_path.stem + "_h264")
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(output_path),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            str(h264_path),
+        ],
+        check=True,
+    )
+    output_path.unlink()
+    h264_path.rename(output_path)
+
     return {
         "status": "success",
         "input_video": str(input_path),
         "output_video": str(output_path),
         "data": results,
     }
+
 
 # ============================================================
 # ENTRY POINT

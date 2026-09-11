@@ -91,7 +91,7 @@ with col1, st.container(border=True, height=700):
                     response = requests.post(
                         f"{API_BASE_URL}/analyze/video",
                         files=files,
-                        timeout=300,
+                        timeout=1000,
                     )
                     response.raise_for_status()
 
