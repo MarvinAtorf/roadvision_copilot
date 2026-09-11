@@ -66,7 +66,7 @@ def _find_explicit_paragraph_matches(
 
 
 def retrieve_context(
-    chroma_client: chromadb.ClientAPI, question: str, top_k: int = 3
+    chroma_client: chromadb.ClientAPI, question: str, top_k: int = 6
 ) -> list[dict]:
     collection = chroma_client.get_or_create_collection(CHROMA_COLLECTION_NAME)
     vector_store = ChromaVectorStore(chroma_collection=collection)
