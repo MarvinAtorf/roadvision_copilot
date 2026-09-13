@@ -35,25 +35,119 @@ PROJECT_ROOT = CURRENT_DIR.parent if CURRENT_DIR.name == "frontend" else CURRENT
 
 LOGO_PATH = PROJECT_ROOT / "assets" / "logo.png"
 
-# --- DISPLAY BACKEND STATUS ---
+# ============================================================
+# SIDEBAR - VIDEO ANALYSIS
+# ============================================================
+
 with st.sidebar:
-    st.subheader("Backend Status")
-    try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=3)
-        response.raise_for_status()
-        health = response.json()
 
-        if health.get("chroma_db") == "ok":
-            st.success("API: ok")
-            st.success("ChromaDB: ok")
-        else:
-            st.success("API: ok")
-            st.warning("ChromaDB: unreachable")
+    st.subheader("Video Analysis")
 
-        st.json(health)
+    if "video_analysis" in st.session_state:
 
-    except requests.exceptions.RequestException:
-        st.error("Backend not reachable")
+        analysis = st.session_state.video_analysis
+
+        data = analysis.get(
+            "data",
+            {},
+        )
+
+        video_metadata = data.get(
+            "video_metadata",
+            {},
+        )
+
+        vehicle_analysis = data.get(
+            "vehicle_analysis",
+            {},
+        )
+
+        traffic_light_analysis = data.get(
+            "traffic_light_analysis",
+            {},
+        )
+
+        vehicle_counts = vehicle_analysis.get(
+            "vehicle_counts",
+            {},
+        )
+
+        # --------------------------------------------------------
+        # Duration
+        # --------------------------------------------------------
+
+        duration = video_metadata.get(
+            "duration_seconds",
+            0,
+        )
+
+        st.write(
+            f"**Duration:** {duration:.1f} s"
+        )
+
+        st.markdown("---")
+
+        # --------------------------------------------------------
+        # Vehicles
+        # --------------------------------------------------------
+
+        st.markdown("**Vehicles**")
+
+        st.write(
+            f"Cars: "
+            f"{vehicle_counts.get('car', 0)}"
+        )
+
+        st.write(
+            f"Trucks: "
+            f"{vehicle_counts.get('truck', 0)}"
+        )
+
+        st.write(
+            f"Buses: "
+            f"{vehicle_counts.get('bus', 0)}"
+        )
+
+        st.write(
+            f"Motorbikes: "
+            f"{vehicle_counts.get('motorbike', 0)}"
+        )
+
+        st.write(
+            f"Bicycles: "
+            f"{vehicle_counts.get('bicycle', 0)}"
+        )
+
+        st.markdown("---")
+
+        # --------------------------------------------------------
+        # Total vehicles
+        # --------------------------------------------------------
+
+        st.markdown(
+            f"**Total vehicles: "
+            f"{vehicle_analysis.get('total_unique_vehicles', 0)}**"
+        )
+
+        st.markdown("---")
+
+        # --------------------------------------------------------
+        # Traffic
+        # --------------------------------------------------------
+
+        st.markdown("**Traffic**")
+
+        st.write(
+            f"Traffic lights: "
+            f"{traffic_light_analysis.get('max_visible_simultaneously', 0)}"
+        )
+
+    else:
+
+        st.info(
+            "Upload and analyze a video "
+            "to see the results here."
+        )
 
 # --- STORE CHAT HISTORY IN SESSION STATE ---
 if "messages" not in st.session_state:
@@ -74,13 +168,17 @@ col1, col2 = st.columns([4, 3], gap="small")
 # --- LEFT CONTAINER (VIDEO UPLOAD) ---
 with col1, st.container(border=True, height=700):
     st.subheader("Traffic Analysis")
-    uploaded_video = st.file_uploader("Upload video", type=["mp4", "mov", "avi"])
+
+    uploaded_video = st.file_uploader(
+        "Upload video",
+        type=["mp4", "mov", "avi"],
+    )
 
     if uploaded_video is not None:
+
         if st.button("Analyze Video"):
-            with st.spinner("Processing video on the backend..."):
+            with st.spinner("Processing the video..."):
                 try:
-                    # Send video to FastAPI backend
                     files = {
                         "file": (
                             uploaded_video.name,
@@ -88,24 +186,66 @@ with col1, st.container(border=True, height=700):
                             uploaded_video.type,
                         )
                     }
+
                     response = requests.post(
                         f"{API_BASE_URL}/analyze/video",
                         files=files,
                         timeout=1000,
                     )
+
                     response.raise_for_status()
 
-                    # Render processed video bytes on screen
-                    st.success("Analysis complete!")
-                    st.video(response.content)
+                    # ------------------------------------------------
+                    # Get analysis JSON
+                    # ------------------------------------------------
+
+                    analysis_response = requests.get(
+                        f"{API_BASE_URL}/analyze/video/analysis",
+                        timeout=15,
+                    )
+
+                    analysis_response.raise_for_status()
+
+                    analysis = analysis_response.json()
+
+                    # ------------------------------------------------
+                    # Save analysis in Streamlit session
+                    # ------------------------------------------------
+
+                    st.session_state.video_analysis = analysis
+
+                    # ------------------------------------------------
+                    # Save processed video
+                    # ------------------------------------------------
+
+                    st.session_state.processed_video = response.content
+
+                    # ------------------------------------------------
+                    # Rerun Streamlit
+                    # ------------------------------------------------
+
+                    st.rerun()
 
                 except requests.exceptions.RequestException as e:
-                    st.error(f"An error occurred while processing the video: {e}")
+                    st.error(
+                        f"An error occurred while processing the video: {e}"
+                    )
+
     else:
         st.info("No video uploaded yet.")
 
-    st.button("Generate report")
+    # ------------------------------------------------
+    # Show processed video after analysis
+    # ------------------------------------------------
 
+    if "processed_video" in st.session_state:
+        st.success("Analysis complete!")
+
+        st.video(
+            st.session_state.processed_video
+        )
+
+    st.button("Generate report")
 # --- RIGHT CONTAINER (CHATBOT) ---
 with col2, st.container(border=True, height=700):
     chatbot_title_col, chatbot_spinner_col = st.columns([3, 1])
