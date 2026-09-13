@@ -1,30 +1,68 @@
+import json
 import shutil
 import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+
 from pipelines.video_traffic_analyzer import run_video_analysis
 
 router = APIRouter()
 
+# Latest video analysis JSON
+LATEST_ANALYSIS_JSON = Path(tempfile.gettempdir()) / "roadvision_latest_analysis.json"
+
 
 @router.post("/analyze/video")
 async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
-    # 1. Save the incoming video file to a temporary directory
     temp_dir = Path(tempfile.gettempdir())
+
     raw_path = temp_dir / f"raw_{file.filename}"
     output_path = temp_dir / f"processed_{file.filename}"
 
     with raw_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # 2. Run the video analysis pipeline
-    run_video_analysis(str(raw_path), str(output_path))
+    # Run full video analysis
+    analysis_result = run_video_analysis(
+        str(raw_path),
+        str(output_path),
+    )
 
-    # 3. Return the processed video back to the client
+    # Save latest analysis result for the frontend
+    with LATEST_ANALYSIS_JSON.open("w", encoding="utf-8") as json_file:
+        json.dump(
+            analysis_result,
+            json_file,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    # Keep the existing MVP-1 video response unchanged
     return FileResponse(
         path=output_path,
         media_type="video/mp4",
         filename=f"processed_{file.filename}",
     )
+
+
+@router.get("/analyze/video/analysis")
+async def get_video_analysis():
+    """
+    Return the analysis JSON from the latest processed video.
+    """
+
+    if not LATEST_ANALYSIS_JSON.exists():
+        return JSONResponse(
+            status_code=404,
+            content={
+                "status": "error",
+                "message": "No video analysis available yet.",
+            },
+        )
+
+    with LATEST_ANALYSIS_JSON.open("r", encoding="utf-8") as json_file:
+        analysis = json.load(json_file)
+
+    return analysis
