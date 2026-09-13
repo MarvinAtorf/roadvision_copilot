@@ -67,3 +67,14 @@ async def get_video_analysis():
         analysis = json.load(json_file)
 
     return analysis
+
+
+@router.delete("/analyze/video/analysis")
+async def clear_video_analysis():
+    """
+    Clear the server-side video analysis.
+    """
+    if LATEST_ANALYSIS_JSON.exists():
+        LATEST_ANALYSIS_JSON.unlink()
+
+    return {"status": "success"}
