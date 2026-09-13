@@ -33,11 +33,22 @@ def _build_context_block(context: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def ask(history: list[dict], context: list[dict] | None = None) -> str:
+def ask(
+    history: list[dict],
+    context: list[dict] | None = None,
+    video_context: str | None = None,
+) -> str:
     trimmed = history[-MAX_HISTORY_MESSAGES:]
     messages: list[MessageParam] = [{"role": m["role"], "content": m["content"]} for m in trimmed]
 
     system_prompt = SYSTEM_PROMPT
+
+    if video_context:
+        system_prompt += (
+            "\n\nData from the most recently analyzed traffic video. Only use facts "
+            "stated here — do not add anything beyond what is given:\n\n" + video_context
+        )
+
     if context:
         system_prompt += (
             "\n\nRelevant excerpts from the StVO (German Road Traffic Regulations) "
