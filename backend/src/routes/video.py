@@ -9,8 +9,10 @@ from pipelines.video_traffic_analyzer import run_video_analysis
 
 router = APIRouter()
 
-# Latest video analysis JSON
-LATEST_ANALYSIS_JSON = Path(tempfile.gettempdir()) / "roadvision_latest_analysis.json"
+# Latest video analysis JSON (overwritten on every new analysis)
+TEMP_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "temp"
+TEMP_DATA_DIR.mkdir(parents=True, exist_ok=True)
+LATEST_ANALYSIS_JSON = TEMP_DATA_DIR / "roadvision_latest_analysis.json"
 
 
 @router.post("/analyze/video")
