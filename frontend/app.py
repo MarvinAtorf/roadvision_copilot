@@ -242,7 +242,7 @@ with col1, st.container(border=True, height=700):
         st.success("Analysis complete!")
 
         st.video(
-            st.session_state.processed_video 
+            st.session_state.processed_video
         )
 
     st.button("Generate report")

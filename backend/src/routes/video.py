@@ -5,7 +5,6 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-
 from pipelines.video_traffic_analyzer import run_video_analysis
 
 router = APIRouter()
