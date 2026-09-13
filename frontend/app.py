@@ -8,6 +8,15 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="RoadVision Copilot", page_icon="🚦", layout="wide")
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+    # clear LATEST_ANALYSIS_JSON
+    try:
+        requests.delete(f"{API_BASE_URL}/analyze/video/analysis", timeout=3)
+    except requests.exceptions.RequestException:
+        st.warning("Failed to clear analysis")
+
 # CSS to remove top padding and vertical gaps completely
 st.markdown(
     """
@@ -40,11 +49,9 @@ LOGO_PATH = PROJECT_ROOT / "assets" / "logo.png"
 # ============================================================
 
 with st.sidebar:
-
     st.subheader("Video Analysis")
 
     if "video_analysis" in st.session_state:
-
         analysis = st.session_state.video_analysis
 
         data = analysis.get(
@@ -81,9 +88,7 @@ with st.sidebar:
             0,
         )
 
-        st.write(
-            f"**Duration:** {duration:.1f} s"
-        )
+        st.write(f"**Duration:** {duration:.1f} s")
 
         st.markdown("---")
 
@@ -93,30 +98,15 @@ with st.sidebar:
 
         st.markdown("**Vehicles**")
 
-        st.write(
-            f"Cars: "
-            f"{vehicle_counts.get('car', 0)}"
-        )
+        st.write(f"Cars: {vehicle_counts.get('car', 0)}")
 
-        st.write(
-            f"Trucks: "
-            f"{vehicle_counts.get('truck', 0)}"
-        )
+        st.write(f"Trucks: {vehicle_counts.get('truck', 0)}")
 
-        st.write(
-            f"Buses: "
-            f"{vehicle_counts.get('bus', 0)}"
-        )
+        st.write(f"Buses: {vehicle_counts.get('bus', 0)}")
 
-        st.write(
-            f"Motorbikes: "
-            f"{vehicle_counts.get('motorbike', 0)}"
-        )
+        st.write(f"Motorbikes: {vehicle_counts.get('motorbike', 0)}")
 
-        st.write(
-            f"Bicycles: "
-            f"{vehicle_counts.get('bicycle', 0)}"
-        )
+        st.write(f"Bicycles: {vehicle_counts.get('bicycle', 0)}")
 
         st.markdown("---")
 
@@ -124,10 +114,7 @@ with st.sidebar:
         # Total vehicles
         # --------------------------------------------------------
 
-        st.markdown(
-            f"**Total vehicles: "
-            f"{vehicle_analysis.get('total_unique_vehicles', 0)}**"
-        )
+        st.markdown(f"**Total vehicles: {vehicle_analysis.get('total_unique_vehicles', 0)}**")
 
         st.markdown("---")
 
@@ -137,17 +124,10 @@ with st.sidebar:
 
         st.markdown("**Traffic**")
 
-        st.write(
-            f"Traffic lights: "
-            f"{traffic_light_analysis.get('max_visible_simultaneously', 0)}"
-        )
+        st.write(f"Traffic lights: {traffic_light_analysis.get('max_visible_simultaneously', 0)}")
 
     else:
-
-        st.info(
-            "Upload and analyze a video "
-            "to see the results here."
-        )
+        st.info("Upload and analyze a video to see the results here.")
 
 # --- STORE CHAT HISTORY IN SESSION STATE ---
 if "messages" not in st.session_state:
@@ -175,7 +155,6 @@ with col1, st.container(border=True, height=700):
     )
 
     if uploaded_video is not None:
-
         if st.button("Analyze Video"):
             with st.spinner("Processing the video..."):
                 try:
@@ -227,9 +206,7 @@ with col1, st.container(border=True, height=700):
                     st.rerun()
 
                 except requests.exceptions.RequestException as e:
-                    st.error(
-                        f"An error occurred while processing the video: {e}"
-                    )
+                    st.error(f"An error occurred while processing the video: {e}")
 
     else:
         st.info("No video uploaded yet.")
@@ -241,11 +218,14 @@ with col1, st.container(border=True, height=700):
     if "processed_video" in st.session_state:
         st.success("Analysis complete!")
 
-        st.video(
-            st.session_state.processed_video
-        )
+        st.video(st.session_state.processed_video)
 
-    st.button("Generate report")
+    col_report, col_clear = st.columns([6, 1])
+    with col_report:
+        if uploaded_video:
+            st.button("Generate report")
+
+
 # --- RIGHT CONTAINER (CHATBOT) ---
 with col2, st.container(border=True, height=700):
     chatbot_title_col, chatbot_spinner_col = st.columns([3, 1])
