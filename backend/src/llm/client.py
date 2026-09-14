@@ -1,3 +1,5 @@
+import re
+
 from anthropic import Anthropic
 from anthropic.types import Message, MessageParam, TextBlock
 
@@ -21,15 +23,32 @@ SYSTEM_PROMPT = (
     "answer with only what the context supports and explicitly say which part you "
     "cannot confirm — do not fill the gap with unconfirmed information. "
     "If the relevant data has not been provided to you at all, say so honestly instead "
-    "of guessing. If you are not sure, answer with 'I don't know'."
+    "of guessing. If you are not sure, answer with 'I don't know'. "
+    "CITATIONS — every context block you are given is tagged with an exact source id "
+    "in square brackets, e.g. [stvo_full_§3] or [stvo_signs_274]. Whenever you use a "
+    "fact from a block, append its exact tag at the end of the relevant sentence in "
+    "the format ':blue[**(rag: [<tag>])**]' — this is Streamlit-flavored markdown for "
+    "blue, bold text; copy the tag exactly as given, never invent or reformat it. If "
+    "your answer uses no provided context (e.g. you had to say 'I don't know'), add "
+    "no citation. Never cite a tag that was not actually provided to you in this turn."
 )
 
 MAX_HISTORY_MESSAGES = 20  # last N messages to include
 
+PARAGRAPH_NUMBER_PATTERN = re.compile(r"§\s*(\d+[a-z]?)")
+
+
+def _paragraph_tag(paragraph_header: str) -> str:
+    """Turn a full paragraph header (e.g. "§ 3 Geschwindigkeit") into a short,
+    stable citation tag (e.g. "stvo_full_§3") for the model to cite verbatim."""
+    match = PARAGRAPH_NUMBER_PATTERN.search(paragraph_header)
+    number = match.group(1) if match else paragraph_header
+    return f"**stvo_full_§{number}**"
+
 
 def _build_context_block(context: list[dict]) -> str:
-    """Turn retrieved StVO paragraphs into a text block for the system prompt."""
-    parts = [f"[{c['paragraph']}]\n{c['text']}" for c in context]
+    """Turn retrieved StVO paragraphs into a tagged text block for the system prompt."""
+    parts = [f"[{_paragraph_tag(c['paragraph'])}]\n{c['text']}" for c in context]
     return "\n\n".join(parts)
 
 
@@ -53,12 +72,13 @@ def ask(
         system_prompt += (
             "\n\nRelevant excerpts from the StVO (German Road Traffic Regulations) "
             "that may help answer the question. Only use facts stated in these "
-            "excerpts — do not add anything beyond what they say:\n\n"
+            "excerpts — do not add anything beyond what they say. Each excerpt is "
+            "tagged with its exact citation id in square brackets:\n\n"
             + _build_context_block(context)
         )
 
     response: Message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system=system_prompt,
         messages=messages,
