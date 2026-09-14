@@ -1,14 +1,12 @@
 import re
 
 import chromadb
-from llama_index.core import Document, Settings, StorageContext, VectorStoreIndex
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core import Document, StorageContext, VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from rag.ingest_stvo import DEFAULT_PDF_PATH, chunk_by_paragraph, extract_stvo_text
 
 CHROMA_COLLECTION_NAME = "stvo_full"
-EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
 # Matches explicit paragraph references in a question, e.g. "§ 53" or "§53a"
 PARAGRAPH_REFERENCE_PATTERN = re.compile(
@@ -17,7 +15,6 @@ PARAGRAPH_REFERENCE_PATTERN = re.compile(
 
 
 # Load the embedding model once at import time instead of on every request
-Settings.embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL_NAME)
 
 
 def build_documents(pdf_path=DEFAULT_PDF_PATH) -> list[Document]:
