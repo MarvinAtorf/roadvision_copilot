@@ -1,8 +1,10 @@
 import os
+import threading
 from pathlib import Path
 
 import requests
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
@@ -16,6 +18,11 @@ if "messages" not in st.session_state:
         requests.delete(f"{API_BASE_URL}/analyze/video/analysis", timeout=3)
     except requests.exceptions.RequestException:
         st.warning("Failed to clear analysis")
+
+if "analysis_state" not in st.session_state:
+    # None = no analysis in flight. While running, holds a plain dict shared
+    # with the background thread: {"running", "video_bytes", "error"}.
+    st.session_state.analysis_state = None
 
 # CSS to remove top padding and vertical gaps completely
 st.markdown(
@@ -44,6 +51,63 @@ PROJECT_ROOT = CURRENT_DIR.parent if CURRENT_DIR.name == "frontend" else CURRENT
 
 LOGO_PATH = PROJECT_ROOT / "assets" / "logo.png"
 
+
+def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> None:
+    """
+    Run the blocking video analysis request in a background thread.
+
+    Only mutates `state`, a plain dict shared with the main thread — never
+    touches st.session_state directly, since Streamlit's session state API
+    requires the main script's thread context, which this thread does not have.
+
+    :param state: Shared mutable dict, created and referenced before the
+        thread is started.
+    :param api_base_url: Base URL of the RoadVision backend API.
+    :param file_payload: The `files` dict passed to requests.post, containing
+        the uploaded video.
+    """
+    try:
+        response = requests.post(
+            f"{api_base_url}/analyze/video",
+            files=file_payload,
+            timeout=1000,
+        )
+        response.raise_for_status()
+        state["video_bytes"] = response.content
+        state["error"] = None
+    except requests.exceptions.RequestException as exc:
+        state["error"] = str(exc)
+    finally:
+        state["running"] = False
+
+
+# ============================================================
+# HANDLE COMPLETED BACKGROUND ANALYSIS
+# ============================================================
+# Runs once, right after the background thread has finished, on whichever
+# rerun (triggered by autorefresh) first notices running == False.
+
+if st.session_state.analysis_state is not None and not st.session_state.analysis_state["running"]:
+    finished_state = st.session_state.analysis_state
+
+    if finished_state["error"]:
+        st.session_state.analysis_error = finished_state["error"]
+    else:
+        try:
+            analysis_response = requests.get(
+                f"{API_BASE_URL}/analyze/video/analysis",
+                timeout=10,
+            )
+            analysis_response.raise_for_status()
+
+            st.session_state.video_analysis = analysis_response.json()
+            st.session_state.processed_video = finished_state["video_bytes"]
+            st.session_state.analysis_error = None
+        except requests.exceptions.RequestException as exc:
+            st.session_state.analysis_error = str(exc)
+
+    st.session_state.analysis_state = None
+
 # ============================================================
 # SIDEBAR - VIDEO ANALYSIS
 # ============================================================
@@ -51,7 +115,54 @@ LOGO_PATH = PROJECT_ROOT / "assets" / "logo.png"
 with st.sidebar:
     st.subheader("Video Analysis")
 
-    if "video_analysis" in st.session_state:
+    analysis_running = (
+        st.session_state.analysis_state is not None and st.session_state.analysis_state["running"]
+    )
+
+    if analysis_running:
+        # Keep rerunning while the background thread is still working, so
+        # the live counts below stay fresh.
+        st_autorefresh(interval=750, key="live_status_refresh")
+
+        try:
+            status_response = requests.get(
+                f"{API_BASE_URL}/analyze/video/status",
+                timeout=3,
+            )
+            live_status = status_response.json() if status_response.status_code == 200 else None
+        except requests.exceptions.RequestException:
+            live_status = None
+
+        if live_status:
+            progress = live_status.get("progress_percent", 0)
+
+            st.write(f"**Processing... {progress:.0f}%**")
+            st.progress(min(progress / 100, 1.0))
+
+            st.markdown("---")
+
+            st.markdown("**Vehicles**")
+
+            live_vehicle_counts = live_status.get("vehicle_counts", {})
+
+            st.write(f"Cars: {live_vehicle_counts.get('car', 0)}")
+            st.write(f"Trucks: {live_vehicle_counts.get('truck', 0)}")
+            st.write(f"Buses: {live_vehicle_counts.get('bus', 0)}")
+            st.write(f"Motorbikes: {live_vehicle_counts.get('motorbike', 0)}")
+            st.write(f"Bicycles: {live_vehicle_counts.get('bicycle', 0)}")
+
+            st.markdown("---")
+
+            st.markdown(f"**Total vehicles: {live_status.get('total_unique_vehicles', 0)}**")
+
+            st.markdown("---")
+
+            st.markdown("**Traffic**")
+            st.write(f"Traffic lights: {live_status.get('traffic_light_count', 0)}")
+        else:
+            st.info("Starting analysis...")
+
+    elif "video_analysis" in st.session_state:
         analysis = st.session_state.video_analysis
 
         data = analysis.get(
@@ -154,60 +265,40 @@ with col1, st.container(border=True, height=700):
         type=["mp4", "mov", "avi"],
     )
 
-    if uploaded_video is not None:
+    if st.session_state.get("analysis_error"):
+        st.error(f"An error occurred while processing the video: {st.session_state.analysis_error}")
+        st.session_state.analysis_error = None
+
+    analysis_running = (
+        st.session_state.analysis_state is not None and st.session_state.analysis_state["running"]
+    )
+
+    if analysis_running:
+        st.info("Processing the video — live counts are shown in the sidebar.")
+    elif uploaded_video is not None:
         if st.button("Analyze Video"):
-            with st.spinner("Processing the video..."):
-                try:
-                    files = {
-                        "file": (
-                            uploaded_video.name,
-                            uploaded_video.getvalue(),
-                            uploaded_video.type,
-                        )
-                    }
+            files = {
+                "file": (
+                    uploaded_video.name,
+                    uploaded_video.getvalue(),
+                    uploaded_video.type,
+                )
+            }
 
-                    response = requests.post(
-                        f"{API_BASE_URL}/analyze/video",
-                        files=files,
-                        timeout=1000,
-                    )
+            st.session_state.analysis_state = {
+                "running": True,
+                "video_bytes": None,
+                "error": None,
+            }
 
-                    response.raise_for_status()
+            worker_thread = threading.Thread(
+                target=_run_analysis_worker,
+                args=(st.session_state.analysis_state, API_BASE_URL, files),
+                daemon=True,
+            )
+            worker_thread.start()
 
-                    # ------------------------------------------------
-                    # Get analysis JSON
-                    # ------------------------------------------------
-
-                    analysis_response = requests.get(
-                        f"{API_BASE_URL}/analyze/video/analysis",
-                        timeout=15,
-                    )
-
-                    analysis_response.raise_for_status()
-
-                    analysis = analysis_response.json()
-
-                    # ------------------------------------------------
-                    # Save analysis in Streamlit session
-                    # ------------------------------------------------
-
-                    st.session_state.video_analysis = analysis
-
-                    # ------------------------------------------------
-                    # Save processed video
-                    # ------------------------------------------------
-
-                    st.session_state.processed_video = response.content
-
-                    # ------------------------------------------------
-                    # Rerun Streamlit
-                    # ------------------------------------------------
-
-                    st.rerun()
-
-                except requests.exceptions.RequestException as e:
-                    st.error(f"An error occurred while processing the video: {e}")
-
+            st.rerun()
     else:
         st.info("No video uploaded yet.")
 

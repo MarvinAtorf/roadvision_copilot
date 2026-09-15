@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import cv2
+from pipelines.live_status import update_status
 from pipelines.shared.annotation import draw_dashboard, draw_detections
 from pipelines.shared.config import (
     CONFIDENCE_THRESHOLD,
@@ -131,6 +132,22 @@ def process_video(
                 )
                 traffic_lights = traffic_light_analyzer.process_frame(
                     raw_detections, timestamp_seconds, diagonal
+                )
+
+                # Publish the current cumulative state for the /status endpoint.
+                vehicle_summary = vehicle_analyzer.build_summary()
+                traffic_summary = traffic_light_analyzer.build_summary()
+
+                # Publish the current cumulative state for the /status endpoint.
+                # traffic_light_count mirrors the same "max_visible_simultaneously"
+                # metric used in the final report, not a cumulative unique count.
+                update_status(
+                    frame_number=processed_frames,
+                    total_frames_in_video=total_frames_in_video,
+                    timestamp_seconds=round(timestamp_seconds, 3),
+                    vehicle_counts=dict(vehicle_summary["vehicle_counts"]),
+                    total_unique_vehicles=vehicle_summary["total_unique_vehicles"],
+                    traffic_light_count=traffic_summary.get("max_visible_simultaneously", 0),
                 )
 
                 timeline.append(
