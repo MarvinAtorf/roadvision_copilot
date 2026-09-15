@@ -1,6 +1,5 @@
 import cv2
 
-
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 DASHBOARD_HEIGHT = 230
@@ -61,11 +60,7 @@ def draw_vehicle_annotations(
             3,
         )
 
-        label = (
-            f"{class_name} "
-            f"ID:{track_id} "
-            f"{confidence:.2f}"
-        )
+        label = f"{class_name} ID:{track_id} {confidence:.2f}"
 
         label_y = max(
             30,
@@ -136,46 +131,16 @@ def draw_vehicle_dashboard(
     )
 
     dashboard_lines = [
-        (
-            f"Frame: "
-            f"{current_frame_number}/{total_frames}"
-        ),
-        (
-            f"Time: "
-            f"{timestamp_seconds:.2f}s"
-        ),
-        (
-            f"Active vehicles: "
-            f"{active_vehicle_count}"
-        ),
-        (
-            f"Unique vehicles: "
-            f"{unique_vehicle_count}"
-        ),
-        (
-            f"Traffic lights: "
-            f"{traffic_light_count}"
-        ),
-        (
-            f"Cars: "
-            f"{vehicle_counts.get('car', 0)}"
-        ),
-        (
-            f"Trucks: "
-            f"{vehicle_counts.get('truck', 0)}"
-        ),
-        (
-            f"Buses: "
-            f"{vehicle_counts.get('bus', 0)}"
-        ),
-        (
-            f"Motorbikes: "
-            f"{vehicle_counts.get('motorbike', 0)}"
-        ),
-        (
-            f"Bicycles: "
-            f"{vehicle_counts.get('bicycle', 0)}"
-        ),
+        (f"Frame: {current_frame_number}/{total_frames}"),
+        (f"Time: {timestamp_seconds:.2f}s"),
+        (f"Active vehicles: {active_vehicle_count}"),
+        (f"Unique vehicles: {unique_vehicle_count}"),
+        (f"Traffic lights: {traffic_light_count}"),
+        (f"Cars: {vehicle_counts.get('car', 0)}"),
+        (f"Trucks: {vehicle_counts.get('truck', 0)}"),
+        (f"Buses: {vehicle_counts.get('bus', 0)}"),
+        (f"Motorbikes: {vehicle_counts.get('motorbike', 0)}"),
+        (f"Bicycles: {vehicle_counts.get('bicycle', 0)}"),
     ]
 
     y_position = 30

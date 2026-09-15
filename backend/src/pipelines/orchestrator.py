@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import cv2
-
+from pipelines.shared.annotation import draw_dashboard, draw_detections
 from pipelines.shared.config import (
     CONFIDENCE_THRESHOLD,
     FRAME_STRIDE,
@@ -10,7 +10,6 @@ from pipelines.shared.config import (
     INFERENCE_IMAGE_SIZE,
     TRACKED_CLASSES,
 )
-from pipelines.shared.annotation import draw_dashboard, draw_detections
 from pipelines.shared.detection import extract_detections
 from pipelines.shared.encoding import reencode_to_h264
 from pipelines.shared.model import get_model
