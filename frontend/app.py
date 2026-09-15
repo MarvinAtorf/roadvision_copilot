@@ -127,7 +127,7 @@ with st.sidebar:
         st.write(f"Traffic lights: {traffic_light_analysis.get('max_visible_simultaneously', 0)}")
 
     else:
-        st.info("Upload and analyze a video to see the results here.")
+        st.info("Upload and analyze a video to see the results here")
 
 # --- STORE CHAT HISTORY IN SESSION STATE ---
 if "messages" not in st.session_state:
