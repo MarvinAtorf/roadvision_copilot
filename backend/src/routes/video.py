@@ -4,7 +4,9 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
+from pipelines.live_status import get_status, reset_status
 from pipelines.orchestrator import run_video_analysis
 
 router = APIRouter()
@@ -25,8 +27,12 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
     with raw_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Run full video analysis
-    analysis_result = run_video_analysis(
+    reset_status()
+
+    # Run the blocking analysis in a worker thread so the event loop stays
+    # free to serve GET /analyze/video/status while this request is in flight.
+    analysis_result = await run_in_threadpool(
+        run_video_analysis,
         str(raw_path),
         str(output_path),
     )
@@ -46,6 +52,23 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
         media_type="video/mp4",
         filename=f"processed_{file.filename}",
     )
+
+
+@router.get("/analyze/video/status")
+async def get_video_status():
+    """Return the live cumulative counts while a video is being analyzed."""
+    status = get_status()
+
+    if status is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "status": "error",
+                "message": "No analysis in progress.",
+            },
+        )
+
+    return status
 
 
 @router.get("/analyze/video/analysis")
