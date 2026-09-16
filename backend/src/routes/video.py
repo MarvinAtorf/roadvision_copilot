@@ -4,7 +4,10 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
+from pipelines.cancel_flag import clear_cancel, request_cancel
+from pipelines.live_status import get_status, reset_status
 from pipelines.orchestrator import run_video_analysis
 
 router = APIRouter()
@@ -25,8 +28,13 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
     with raw_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Run full video analysis
-    analysis_result = run_video_analysis(
+    reset_status()
+    clear_cancel()
+
+    # Run the blocking analysis in a worker thread so the event loop stays
+    # free to serve GET /analyze/video/status while this request is in flight.
+    analysis_result = await run_in_threadpool(
+        run_video_analysis,
         str(raw_path),
         str(output_path),
     )
@@ -40,12 +48,42 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
             ensure_ascii=False,
         )
 
+    if analysis_result["status"] == "cancelled":
+        return JSONResponse(
+            status_code=200,
+            content={"status": "cancelled"},
+        )
+
     # Keep the existing MVP-1 video response unchanged
     return FileResponse(
         path=output_path,
         media_type="video/mp4",
         filename=f"processed_{file.filename}",
     )
+
+
+@router.post("/analyze/video/cancel")
+async def cancel_video_analysis():
+    """Signal the running analysis to stop as soon as possible."""
+    request_cancel()
+    return {"status": "cancel_requested"}
+
+
+@router.get("/analyze/video/status")
+async def get_video_status():
+    """Return the live cumulative counts while a video is being analyzed."""
+    status = get_status()
+
+    if status is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "status": "error",
+                "message": "No analysis in progress.",
+            },
+        )
+
+    return status
 
 
 @router.get("/analyze/video/analysis")

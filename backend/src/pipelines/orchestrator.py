@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 
 import cv2
+from pipelines.cancel_flag import is_cancel_requested
+from pipelines.live_status import update_status
 from pipelines.shared.annotation import draw_dashboard, draw_detections
 from pipelines.shared.config import (
     CONFIDENCE_THRESHOLD,
@@ -28,6 +30,9 @@ def process_video(
     Reads the video once, runs a single batched YOLO pass per chunk of
     frames, and hands the mixed detections to both analyzers — each one
     filters out only the classes it cares about.
+
+    Cooperatively cancellable: checks the shared cancel flag once per
+    batch and stops early (with partial results) if it is set.
     """
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -79,9 +84,14 @@ def process_video(
     processed_frames = 0
     timeline = []
     last_detections: list[dict] = []
+    cancelled = False
 
     try:
         while True:
+            if is_cancel_requested():
+                cancelled = True
+                break
+
             frames = []
             for _ in range(INFERENCE_BATCH_SIZE):
                 success, frame = cap.read()
@@ -133,6 +143,21 @@ def process_video(
                     raw_detections, timestamp_seconds, diagonal
                 )
 
+                vehicle_summary = vehicle_analyzer.build_summary()
+                traffic_summary = traffic_light_analyzer.build_summary()
+
+                # Publish the current cumulative state for the /status endpoint.
+                # traffic_light_count mirrors the same "max_visible_simultaneously"
+                # metric used in the final report, not a cumulative unique count.
+                update_status(
+                    frame_number=processed_frames,
+                    total_frames_in_video=total_frames_in_video,
+                    timestamp_seconds=round(timestamp_seconds, 3),
+                    vehicle_counts=dict(vehicle_summary["vehicle_counts"]),
+                    total_unique_vehicles=vehicle_summary["total_unique_vehicles"],
+                    traffic_light_count=traffic_summary.get("max_visible_simultaneously", 0),
+                )
+
                 timeline.append(
                     {
                         "timestamp_seconds": round(timestamp_seconds, 3),
@@ -167,7 +192,6 @@ def process_video(
 
                 draw_detections(frame, vehicles + traffic_lights)
 
-                vehicle_summary = vehicle_analyzer.build_summary()
                 draw_dashboard(
                     frame,
                     width,
@@ -202,6 +226,7 @@ def process_video(
         print()
 
     analysis = {
+        "status": "cancelled" if cancelled else "success",
         "video_metadata": {
             "video_path": str(input_path),
             "fps": round(fps, 3),
@@ -241,6 +266,14 @@ def run_video_analysis(input_video_path: str, output_video_path: str) -> dict:
         output_json_path=output_path.with_suffix(".json"),
         verbose=False,
     )
+
+    if results["status"] == "cancelled":
+        return {
+            "status": "cancelled",
+            "input_video": str(input_path),
+            "output_video": None,
+            "data": results,
+        }
 
     reencode_to_h264(output_path)
 
