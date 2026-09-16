@@ -31,13 +31,14 @@ SYSTEM_PROMPT = (
     "[video_timeline_out_of_range] instead, tell the user the requested time falls "
     "outside the video's duration rather than guessing at an answer. "
     "CITATIONS — every context block you are given is tagged with an exact source id "
-    "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], or [video_timeline_80s]. "
-    "Whenever you use a fact from a block, append its exact tag at the end of the "
-    "relevant sentence — the citation format depends on the block's source, not a "
-    "single fixed style: "
+    "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], [video_summary], or "
+    "[video_timeline_80s]. Whenever you use a fact from a block, append its exact tag "
+    "at the end of the relevant sentence — the citation format depends on the block's "
+    "source, not a single fixed style: "
     "for StVO blocks (tags starting with stvo_full_ or stvo_signs_), use "
     "':blue[**(rag: [<tag>])**]'; "
-    "for video-analysis blocks (tags starting with video_timeline_), use "
+    "for video-analysis blocks (any tag starting with video_, including "
+    "video_summary and video_timeline_*), use "
     "':violet[**(video_context: [<tag>])**]'. "
     "This is Streamlit-flavored markdown for colored, bold text; copy the tag itself "
     "exactly as given, never invent or reformat it. If your answer uses no provided "
@@ -77,9 +78,9 @@ def ask(
     if video_context:
         system_prompt += (
             "\n\nData from the most recently analyzed traffic video. Only use facts "
-            "stated here — do not add anything beyond what is given. This may include "
-            "a block about a specific point in time, tagged [video_timeline_<seconds>s] "
-            "or [video_timeline_out_of_range] — cite it with the violet "
+            "stated here — do not add anything beyond what is given. This is provided "
+            "as one or more tagged blocks (e.g. [video_summary], [video_timeline_80s], "
+            "or [video_timeline_out_of_range]) — cite each with the violet "
             "'video_context:' style described above:\n\n" + video_context
         )
 
