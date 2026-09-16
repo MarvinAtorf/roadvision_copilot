@@ -1,3 +1,5 @@
+TIMELINE_BUCKET_SECONDS = 20
+
 VEHICLE_CLASSES = {
     1: "bicycle",
     2: "car",

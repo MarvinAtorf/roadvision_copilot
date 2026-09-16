@@ -24,13 +24,20 @@ SYSTEM_PROMPT = (
     "cannot confirm — do not fill the gap with unconfirmed information. "
     "If the relevant data has not been provided to you at all, say so honestly instead "
     "of guessing. If you are not sure, answer with 'I don't know'. "
+    "If asked what happens at a specific point in time in the video, and a block "
+    "tagged [video_timeline_<seconds>s] is provided, describe only what that block "
+    "states for its time window — do not imply frame-exact precision, since the data "
+    "is aggregated over a ~20 second window around that point. If the block is tagged "
+    "[video_timeline_out_of_range] instead, tell the user the requested time falls "
+    "outside the video's duration rather than guessing at an answer. "
     "CITATIONS — every context block you are given is tagged with an exact source id "
-    "in square brackets, e.g. [stvo_full_§3] or [stvo_signs_274]. Whenever you use a "
-    "fact from a block, append its exact tag at the end of the relevant sentence in "
-    "the format ':blue[**(rag: [<tag>])**]' — this is Streamlit-flavored markdown for "
-    "blue, bold text; copy the tag exactly as given, never invent or reformat it. If "
-    "your answer uses no provided context (e.g. you had to say 'I don't know'), add "
-    "no citation. Never cite a tag that was not actually provided to you in this turn."
+    "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], or [video_timeline_80s]. "
+    "Whenever you use a fact from a block, append its exact tag at the end of the "
+    "relevant sentence in the format ':blue[**(rag: [<tag>])**]' — this is "
+    "Streamlit-flavored markdown for blue, bold text; copy the tag exactly as given, "
+    "never invent or reformat it. If your answer uses no provided context (e.g. you "
+    "had to say 'I don't know'), add no citation. Never cite a tag that was not "
+    "actually provided to you in this turn."
 )
 
 MAX_HISTORY_MESSAGES = 20  # last N messages to include
@@ -65,7 +72,10 @@ def ask(
     if video_context:
         system_prompt += (
             "\n\nData from the most recently analyzed traffic video. Only use facts "
-            "stated here — do not add anything beyond what is given:\n\n" + video_context
+            "stated here — do not add anything beyond what is given. This may include "
+            "a block about a specific point in time, tagged [video_timeline_<seconds>s] "
+            "or [video_timeline_out_of_range] — cite it the same way as any other "
+            "tagged block below when you use it:\n\n" + video_context
         )
 
     if context:

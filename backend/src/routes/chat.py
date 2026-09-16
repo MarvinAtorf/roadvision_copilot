@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from llm.client import ask
-from llm.video_context import build_video_context_block
+from llm.video_context import build_timeline_context_block, build_video_context_block
 from rag.index import retrieve_context
 from schemas.chat import ChatRequest, ChatResponse
 
@@ -23,11 +23,24 @@ def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         except Exception:
             logger.exception("RAG retrieval failed, continuing without context")
 
-    video_context = None
+    video_context_parts = []
+
     try:
-        video_context = build_video_context_block()
+        summary_block = build_video_context_block()
+        if summary_block:
+            video_context_parts.append(summary_block)
     except Exception:
         logger.exception("Loading video context failed, continuing without it")
+
+    if history:
+        try:
+            timeline_block = build_timeline_context_block(last_user_message)
+            if timeline_block:
+                video_context_parts.append(timeline_block)
+        except Exception:
+            logger.exception("Loading video timeline context failed, continuing without it")
+
+    video_context = "\n\n".join(video_context_parts) if video_context_parts else None
 
     try:
         answer = ask(history, context=context, video_context=video_context)
