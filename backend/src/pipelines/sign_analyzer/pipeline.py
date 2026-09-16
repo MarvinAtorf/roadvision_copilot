@@ -1,9 +1,12 @@
 from collections import defaultdict
 
 from pipelines.sign_analyzer.config import (
+    SIGN_CROSS_CLASS_MATCH_THRESHOLD,
+    SIGN_CROSS_CLASS_MIN_IOU,
     SIGN_EMA_ALPHA,
     SIGN_GAP_SECONDS,
     SIGN_MATCH_THRESHOLD,
+    SIGN_MIN_AREA_RATIO,
     SIGN_NEAR_DISTANCE,
     SIGN_SIZE_SIMILARITY,
 )
@@ -17,21 +20,18 @@ from pipelines.sign_analyzer.tracking import (
 class SignAnalyzer:
     """Tracks and counts traffic signs across a video's frames.
 
-    A single physical sign gets classified independently on every frame
-    it's visible in, and those per-frame classifications don't always
-    agree (a distant/blurry frame can misread "40" as "60"). Instead of
-    locking a track's label to whatever its first frame said, every
-    frame casts a confidence-weighted vote for its track's class, and
-    the current leading vote is used as that track's label - so a track
-    corrects itself as clearer, closer frames come in, and the final
-    summary always reflects the strongest evidence gathered, not the
-    first (often worst) glimpse.
+    A single physical sign is classified independently on every frame it
+    appears in, and those classifications disagree - a distant sign is
+    often misread and only becomes legible as the camera approaches. So
+    a track's class comes from a vote across all its frames, weighted by
+    confidence AND box size, letting the close-up (readable) frames
+    decide the label instead of being outvoted by the blurry approach.
     """
 
     def __init__(self):
         self.canonical_tracks: dict[int, dict] = {}
         self.next_id = 1
-        # canonical_id -> {class_id: cumulative confidence}
+        # canonical_id -> {class_id: accumulated vote weight}
         self.canonical_class_votes: dict[int, dict[int, float]] = {}
         # class_id -> class_name, learned from whatever the model has told us
         self.class_id_to_name: dict[int, str] = {}
@@ -48,7 +48,10 @@ class SignAnalyzer:
         """
         expire_identities(self.canonical_tracks, timestamp_seconds, SIGN_GAP_SECONDS)
 
-        detections = deduplicate_frame_detections(raw_detections)
+        minimum_area = SIGN_MIN_AREA_RATIO * diagonal * diagonal
+
+        sized = [d for d in raw_detections if d["area"] >= minimum_area]
+        detections = deduplicate_frame_detections(sized)
 
         resolved = []
 
@@ -65,12 +68,17 @@ class SignAnalyzer:
                 near_distance_threshold=SIGN_NEAR_DISTANCE,
                 size_similarity_threshold=SIGN_SIZE_SIMILARITY,
                 ema_alpha=SIGN_EMA_ALPHA,
+                cross_class_match_threshold=SIGN_CROSS_CLASS_MATCH_THRESHOLD,
+                cross_class_min_iou=SIGN_CROSS_CLASS_MIN_IOU,
             )
 
+            # sqrt(area) is roughly the sign's linear size on screen, and
+            # legibility scales with that, so a close reading outweighs a
+            # distant guess.
+            weight = detection["confidence"] * (detection["area"] ** 0.5)
+
             votes = self.canonical_class_votes.setdefault(canonical_id, {})
-            votes[detection["class_id"]] = (
-                votes.get(detection["class_id"], 0.0) + detection["confidence"]
-            )
+            votes[detection["class_id"]] = votes.get(detection["class_id"], 0.0) + weight
 
             best_class_id = max(votes, key=votes.get)
             best_class_name = self.class_id_to_name.get(best_class_id, detection["class_name"])
@@ -85,16 +93,15 @@ class SignAnalyzer:
             )
 
         active_count = len(resolved)
-        if active_count > self.max_active_signs:
-            self.max_active_signs = active_count
+        self.max_active_signs = max(self.max_active_signs, active_count)
 
         return resolved
 
     def build_summary(self) -> dict:
         """Return the final traffic_sign_analysis section for the output JSON.
 
-        Every track's final class is its highest-confidence-vote class
-        across the whole video, not whatever it was first seen as.
+        Every track's final class is its winning weighted vote across the
+        whole video, not whatever it was first seen as.
         """
         sign_counts: dict[str, int] = defaultdict(int)
 
