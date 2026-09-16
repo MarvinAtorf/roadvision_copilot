@@ -3,8 +3,10 @@ from pathlib import Path
 from ultralytics import YOLO
 
 MODEL_PATH = Path(__file__).resolve().parents[3] / "model_weights" / "yolo11m.pt"
+SIGN_MODEL_PATH = Path(__file__).resolve().parents[3] / "model_weights" / "traffic_sign_model.pt"
 
 _model: YOLO | None = None
+_sign_model: YOLO | None = None
 
 
 def get_model() -> YOLO:
@@ -28,3 +30,26 @@ def get_model() -> YOLO:
         _model = YOLO(str(MODEL_PATH))
 
     return _model
+
+
+def get_sign_model() -> YOLO:
+    """
+    Retrieve a globally cached YOLO model instance for traffic sign
+    detection (trained on GTSDB / the project's sign taxonomy, separate
+    from the COCO-pretrained vehicle/traffic-light model).
+
+    Raises:
+        FileNotFoundError: If the sign model cannot be found at the specified path.
+
+    :return: A YOLO model instance.
+    :rtype: YOLO
+    """
+
+    global _sign_model
+
+    if _sign_model is None:
+        if not SIGN_MODEL_PATH.exists():
+            raise FileNotFoundError(f"Sign detection model not found:\n{SIGN_MODEL_PATH}")
+        _sign_model = YOLO(str(SIGN_MODEL_PATH))
+
+    return _sign_model

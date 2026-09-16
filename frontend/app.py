@@ -159,6 +159,14 @@ with st.sidebar:
 
             st.markdown("**Traffic**")
             st.write(f"Traffic lights: {live_status.get('traffic_light_count', 0)}")
+            st.markdown("---")
+            st.markdown("**Traffic Signs**")
+            live_sign_counts = live_status.get("sign_counts", {})
+            st.write(f"Unique signs detected: {live_status.get('total_unique_signs', 0)}")
+            top_live_signs = sorted(live_sign_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            for sign_name, count in top_live_signs:
+                st.write(f"{sign_name}: {count}")
+
         else:
             st.info("Starting analysis...")
 
@@ -236,6 +244,25 @@ with st.sidebar:
         st.markdown("**Traffic**")
 
         st.write(f"Traffic lights: {traffic_light_analysis.get('max_visible_simultaneously', 0)}")
+
+        st.markdown("---")
+        
+
+        traffic_sign_analysis = data.get("traffic_sign_analysis", {})
+        sign_counts = traffic_sign_analysis.get("sign_counts", {})
+
+        st.markdown("**Traffic signs**")
+        st.write(f"Unique signs detected: {traffic_sign_analysis.get('total_unique_signs', 0)}")
+
+        top_signs = sorted(sign_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+        for sign_name, count in top_signs:
+            st.write(f"{sign_name}: {count}")
+
+        if len(sign_counts) > 8:
+            st.caption(f"...and {len(sign_counts) - 8} more sign types")
+
+
+
 
     else:
         st.info("Upload and analyze a video to see the results here")

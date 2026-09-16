@@ -20,6 +20,8 @@ class LiveStatus(BaseModel):
     vehicle_counts: dict[str, int]
     total_unique_vehicles: int
     traffic_light_count: int
+    sign_counts: dict[str, int] = {}
+    total_unique_signs: int = 0
 
     @computed_field
     @property
