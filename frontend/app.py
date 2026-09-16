@@ -87,6 +87,14 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
             state["video_bytes"] = response.content
 
         state["error"] = None
+    except requests.exceptions.HTTPError as exc:
+        # Backend responds 409 when an analysis is already running elsewhere
+        # (e.g. a second tab) — surface a clear message instead of the raw
+        # HTTP error text.
+        if exc.response is not None and exc.response.status_code == 409:
+            state["error"] = "Another analysis is already running — please wait for it to finish."
+        else:
+            state["error"] = str(exc)
     except requests.exceptions.RequestException as exc:
         state["error"] = str(exc)
     finally:
