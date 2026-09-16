@@ -119,10 +119,7 @@ def deduplicate_frame_detections(detections, iou_threshold=DEDUP_IOU_THRESHOLD):
             if class_id != existing["class_id"]:
                 continue
 
-            if (
-                calculate_iou(box, existing["box"], area, existing["area"])
-                >= iou_threshold
-            ):
+            if calculate_iou(box, existing["box"], area, existing["area"]) >= iou_threshold:
                 duplicate = True
                 break
 

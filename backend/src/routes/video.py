@@ -1,14 +1,13 @@
 import json
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
 from pipelines.live_status import get_status, reset_status
-
 from pipelines.orchestrator import run_video_analysis
 
 router = APIRouter()
@@ -47,7 +46,7 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
 
     # Keep a timestamped copy so previous runs aren't overwritten by the
     # next upload of a file with the same name.
-    timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
     stored_video_path = PROCESSED_VIDEO_DIR / f"{timestamp}_{file.filename}"
     shutil.copy2(output_path, stored_video_path)
 
@@ -90,9 +89,7 @@ async def list_processed_videos():
             {
                 "filename": path.name,
                 "size_bytes": path.stat().st_size,
-                "created": datetime.fromtimestamp(
-                    path.stat().st_mtime, tz=timezone.utc
-                ).isoformat(),
+                "created": datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat(),
             }
             for path in videos
         ],
@@ -106,10 +103,7 @@ async def get_processed_video(filename: str):
     # crafted filename can't read arbitrary files off the server.
     candidate = (PROCESSED_VIDEO_DIR / filename).resolve()
 
-    if (
-        PROCESSED_VIDEO_DIR.resolve() not in candidate.parents
-        or not candidate.is_file()
-    ):
+    if PROCESSED_VIDEO_DIR.resolve() not in candidate.parents or not candidate.is_file():
         return JSONResponse(
             status_code=404,
             content={"status": "error", "message": "Video not found."},
