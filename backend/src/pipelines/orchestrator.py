@@ -10,11 +10,15 @@ from pipelines.shared.config import (
     FRAME_STRIDE,
     INFERENCE_BATCH_SIZE,
     INFERENCE_IMAGE_SIZE,
+    SIGN_CONFIDENCE_THRESHOLD,
+    SIGN_FRAME_STRIDE,
+    SIGN_INFERENCE_IMAGE_SIZE,
     TRACKED_CLASSES,
 )
-from pipelines.shared.detection import extract_detections
+from pipelines.shared.detection import extract_detections, extract_sign_detections
 from pipelines.shared.encoding import reencode_to_h264
-from pipelines.shared.model import get_model
+from pipelines.shared.model import get_model, get_sign_model
+from pipelines.sign_analyzer.pipeline import SignAnalyzer
 from pipelines.traffic_light_analyzer.pipeline import TrafficLightAnalyzer
 from pipelines.vehicle_analyzer.pipeline import VehicleAnalyzer
 
@@ -27,9 +31,13 @@ def process_video(
 ) -> dict:
     """Run detection, tracking and annotation over a video file.
 
-    Reads the video once, runs a single batched YOLO pass per chunk of
-    frames, and hands the mixed detections to both analyzers — each one
-    filters out only the classes it cares about.
+    Reads the video once and runs two batched YOLO passes per chunk of
+    frames - one on the COCO-pretrained vehicle/traffic-light model
+    (every FRAME_STRIDE-th frame), one on the sign-detection model
+    (every SIGN_FRAME_STRIDE-th frame - signs stay on screen for a
+    while, so they don't need re-detecting on every single frame the
+    way fast-moving vehicles do). Publishes live progress via
+    pipelines.live_status after every frame for the /status endpoint.
 
     Cooperatively cancellable: checks the shared cancel flag once per
     batch and stops early (with partial results) if it is set.
@@ -43,6 +51,7 @@ def process_video(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     model = get_model()
+    sign_model = get_sign_model()
 
     cap = cv2.VideoCapture(str(input_path))
 
@@ -80,10 +89,12 @@ def process_video(
 
     vehicle_analyzer = VehicleAnalyzer()
     traffic_light_analyzer = TrafficLightAnalyzer()
+    sign_analyzer = SignAnalyzer()
 
     processed_frames = 0
     timeline = []
     last_detections: list[dict] = []
+    last_sign_detections: list[dict] = []
     cancelled = False
 
     try:
@@ -111,7 +122,15 @@ def process_video(
             else:
                 inference_indices = frame_indices
 
+            if SIGN_FRAME_STRIDE > 1:
+                sign_inference_indices = [
+                    i for i in frame_indices if (processed_frames + i) % SIGN_FRAME_STRIDE == 0
+                ]
+            else:
+                sign_inference_indices = frame_indices
+
             batch_results = {}
+            batch_sign_results = {}
 
             if inference_indices:
                 results = model(
@@ -121,9 +140,18 @@ def process_video(
                     imgsz=INFERENCE_IMAGE_SIZE,
                     verbose=False,
                 )
-
                 for position, frame_index in enumerate(inference_indices):
                     batch_results[frame_index] = results[position]
+
+            if sign_inference_indices:
+                sign_results = sign_model(
+                    [frames[i] for i in sign_inference_indices],
+                    conf=SIGN_CONFIDENCE_THRESHOLD,
+                    imgsz=SIGN_INFERENCE_IMAGE_SIZE,
+                    verbose=False,
+                )
+                for position, frame_index in enumerate(sign_inference_indices):
+                    batch_sign_results[frame_index] = sign_results[position]
 
             for frame_index, frame in enumerate(frames):
                 processed_frames += 1
@@ -136,15 +164,29 @@ def process_video(
                     # Reuse the previous result for skipped frames.
                     raw_detections = last_detections
 
+                if frame_index in batch_sign_results:
+                    raw_sign_detections = extract_sign_detections(batch_sign_results[frame_index])
+                    last_sign_detections = raw_sign_detections
+                else:
+                    raw_sign_detections = last_sign_detections
+
                 vehicles = vehicle_analyzer.process_frame(
                     raw_detections, timestamp_seconds, diagonal
                 )
                 traffic_lights = traffic_light_analyzer.process_frame(
                     raw_detections, timestamp_seconds, diagonal
                 )
+                signs = sign_analyzer.process_frame(
+                    raw_sign_detections, timestamp_seconds, diagonal
+                )
 
+                # Computed once per frame and reused below for both the
+                # /status update and the on-frame dashboard — the state
+                # does not change in between, so a second call would just
+                # recompute the same numbers.
                 vehicle_summary = vehicle_analyzer.build_summary()
                 traffic_summary = traffic_light_analyzer.build_summary()
+                sign_summary = sign_analyzer.build_summary()
 
                 # Publish the current cumulative state for the /status endpoint.
                 # traffic_light_count mirrors the same "max_visible_simultaneously"
@@ -156,6 +198,8 @@ def process_video(
                     vehicle_counts=dict(vehicle_summary["vehicle_counts"]),
                     total_unique_vehicles=vehicle_summary["total_unique_vehicles"],
                     traffic_light_count=traffic_summary.get("max_visible_simultaneously", 0),
+                    sign_counts=dict(sign_summary["sign_counts"]),
+                    total_unique_signs=sign_summary["total_unique_signs"],
                 )
 
                 timeline.append(
@@ -186,11 +230,24 @@ def process_video(
                                 for d in traffic_lights
                             ],
                         },
-                        "traffic_signs": {"detections": []},
+                        "traffic_signs": {
+                            "active_count": len(signs),
+                            "detections": [
+                                {
+                                    "track_id": int(d["canonical_id"]),
+                                    "class": d["class_name"],
+                                    "sign_class_id": int(d["class_id"]),
+                                    "confidence": round(d["confidence"], 4),
+                                    "bbox": [round(v, 2) for v in d["box"]],
+                                }
+                                for d in signs
+                            ],
+                        },
                     }
                 )
 
-                draw_detections(frame, vehicles + traffic_lights)
+                annotated_signs = [{**d, "category": "traffic_sign"} for d in signs]
+                draw_detections(frame, vehicles + traffic_lights + annotated_signs)
 
                 draw_dashboard(
                     frame,
@@ -206,6 +263,7 @@ def process_video(
                         f"Motorbikes: {vehicle_summary['vehicle_counts']['motorbike']}",
                         f"Bicycles: {vehicle_summary['vehicle_counts']['bicycle']}",
                         f"Traffic lights: {len(traffic_lights)}",
+                        f"Traffic signs: {len(signs)}",
                     ],
                 )
 
@@ -238,10 +296,7 @@ def process_video(
         },
         "vehicle_analysis": vehicle_analyzer.build_summary(),
         "traffic_light_analysis": traffic_light_analyzer.build_summary(),
-        "traffic_sign_analysis": {
-            "status": "not_implemented_in_mvp",
-            "detections": [],
-        },
+        "traffic_sign_analysis": sign_analyzer.build_summary(),
         "timeline": timeline,
     }
 
