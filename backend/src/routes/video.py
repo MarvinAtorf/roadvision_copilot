@@ -1,14 +1,14 @@
 import json
 import shutil
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
-from pipelines.analysis_lock import finish, try_start
-from pipelines.cancel_flag import clear_cancel, request_cancel
 from pipelines.live_status import get_status, reset_status
+
 from pipelines.orchestrator import run_video_analysis
 
 router = APIRouter()
@@ -18,64 +18,104 @@ TEMP_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "temp"
 TEMP_DATA_DIR.mkdir(parents=True, exist_ok=True)
 LATEST_ANALYSIS_JSON = TEMP_DATA_DIR / "roadvision_latest_analysis.json"
 
+# Processed videos are kept here instead of only in the OS temp dir, so a
+# run can still be reviewed after the request is over (and, in Docker,
+# after the container restarts - the temp dir does not survive that).
+PROCESSED_VIDEO_DIR = Path(__file__).resolve().parents[2] / "data" / "processed_videos"
+PROCESSED_VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+
 
 @router.post("/analyze/video")
 async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
-    # Only one analysis may run at a time (MVP2 scope) — reject immediately,
-    # before touching disk, if another analysis already holds the slot.
-    if not try_start():
-        raise HTTPException(status_code=409, detail="An analysis is already in progress")
+    temp_dir = Path(tempfile.gettempdir())
 
-    try:
-        temp_dir = Path(tempfile.gettempdir())
+    raw_path = temp_dir / f"raw_{file.filename}"
+    output_path = temp_dir / f"processed_{file.filename}"
 
-        raw_path = temp_dir / f"raw_{file.filename}"
-        output_path = temp_dir / f"processed_{file.filename}"
+    with raw_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-        with raw_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+    reset_status()
 
-        reset_status()
-        clear_cancel()
+    # Run the blocking analysis in a worker thread so the event loop stays
+    # free to serve GET /analyze/video/status while this request is in flight.
+    analysis_result = await run_in_threadpool(
+        run_video_analysis,
+        str(raw_path),
+        str(output_path),
+    )
 
-        # Run the blocking analysis in a worker thread so the event loop stays
-        # free to serve GET /analyze/video/status while this request is in flight.
-        analysis_result = await run_in_threadpool(
-            run_video_analysis,
-            str(raw_path),
-            str(output_path),
+    # Keep a timestamped copy so previous runs aren't overwritten by the
+    # next upload of a file with the same name.
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+    stored_video_path = PROCESSED_VIDEO_DIR / f"{timestamp}_{file.filename}"
+    shutil.copy2(output_path, stored_video_path)
+
+    stored_json_path = stored_video_path.with_suffix(".json")
+
+    analysis_result["stored_video"] = str(stored_video_path)
+
+    with stored_json_path.open("w", encoding="utf-8") as json_file:
+        json.dump(analysis_result, json_file, indent=2, ensure_ascii=False)
+
+    # Save latest analysis result for the frontend
+    with LATEST_ANALYSIS_JSON.open("w", encoding="utf-8") as json_file:
+        json.dump(
+            analysis_result,
+            json_file,
+            indent=2,
+            ensure_ascii=False,
         )
 
-        # Save latest analysis result for the frontend
-        with LATEST_ANALYSIS_JSON.open("w", encoding="utf-8") as json_file:
-            json.dump(
-                analysis_result,
-                json_file,
-                indent=2,
-                ensure_ascii=False,
-            )
+    # Keep the existing MVP-1 video response unchanged
+    return FileResponse(
+        path=output_path,
+        media_type="video/mp4",
+        filename=f"processed_{file.filename}",
+    )
 
-        if analysis_result["status"] == "cancelled":
-            return JSONResponse(
-                status_code=200,
-                content={"status": "cancelled"},
-            )
 
-        # Keep the existing MVP-1 video response unchanged
-        return FileResponse(
-            path=output_path,
-            media_type="video/mp4",
-            filename=f"processed_{file.filename}",
+@router.get("/analyze/video/processed")
+async def list_processed_videos():
+    """List the processed videos kept on disk, newest first."""
+    videos = sorted(
+        PROCESSED_VIDEO_DIR.glob("*.mp4"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+
+    return {
+        "count": len(videos),
+        "videos": [
+            {
+                "filename": path.name,
+                "size_bytes": path.stat().st_size,
+                "created": datetime.fromtimestamp(
+                    path.stat().st_mtime, tz=timezone.utc
+                ).isoformat(),
+            }
+            for path in videos
+        ],
+    }
+
+
+@router.get("/analyze/video/processed/{filename}")
+async def get_processed_video(filename: str):
+    """Return one previously processed video by filename."""
+    # Resolve and confirm the path stays inside PROCESSED_VIDEO_DIR, so a
+    # crafted filename can't read arbitrary files off the server.
+    candidate = (PROCESSED_VIDEO_DIR / filename).resolve()
+
+    if (
+        PROCESSED_VIDEO_DIR.resolve() not in candidate.parents
+        or not candidate.is_file()
+    ):
+        return JSONResponse(
+            status_code=404,
+            content={"status": "error", "message": "Video not found."},
         )
-    finally:
-        finish()
 
-
-@router.post("/analyze/video/cancel")
-async def cancel_video_analysis():
-    """Signal the running analysis to stop as soon as possible."""
-    request_cancel()
-    return {"status": "cancel_requested"}
+    return FileResponse(path=candidate, media_type="video/mp4", filename=candidate.name)
 
 
 @router.get("/analyze/video/status")

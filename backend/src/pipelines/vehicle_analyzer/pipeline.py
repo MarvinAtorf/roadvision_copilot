@@ -1,8 +1,11 @@
 from pipelines.shared.config import VEHICLE_CLASSES
 from pipelines.vehicle_analyzer.config import (
+    VEHICLE_CROSS_CLASS_MATCH_THRESHOLD,
+    VEHICLE_CROSS_CLASS_MIN_IOU,
     VEHICLE_EMA_ALPHA,
     VEHICLE_GAP_SECONDS,
     VEHICLE_MATCH_THRESHOLD,
+    VEHICLE_MIN_AREA_RATIO,
     VEHICLE_NEAR_DISTANCE,
     VEHICLE_SIZE_SIMILARITY,
 )
@@ -16,15 +19,14 @@ from pipelines.vehicle_analyzer.tracking import (
 class VehicleAnalyzer:
     """Tracks and counts vehicles across a video's frames.
 
-    COCO-pretrained YOLO models are known to flicker between "car" and
-    "truck" for high-silhouette vehicles (SUVs, vans, MPVs) frame to
-    frame. Locking a track's class to whatever its first frame said (or
-    worse, treating each class flip as a brand-new track) causes real
-    double-counting. Instead, every frame casts a confidence-weighted
-    vote for its track's class, and the current leading vote is used as
-    that track's label - so a track's final class reflects the
-    strongest evidence gathered across its whole lifetime, not a single
-    frame's guess.
+    COCO-pretrained YOLO models flicker between "car", "truck" and "bus"
+    for high-silhouette vehicles (SUVs, vans, lorries), so a track's
+    class is decided by a vote across all the frames it was seen in
+    rather than by any single frame. Votes are weighted by confidence
+    AND by box size: a vehicle 300 px wide is classified far more
+    reliably than the same vehicle at 30 px in the distance, so the
+    close-up frames should decide the label instead of being outvoted by
+    a long tail of unreliable far-away ones.
 
     Holds all mutable tracking state internally, so the orchestrator only
     needs to call process_frame() once per frame and build_summary() once
@@ -34,7 +36,7 @@ class VehicleAnalyzer:
     def __init__(self):
         self.canonical_tracks: dict[int, dict] = {}
         self.next_id = 1
-        # canonical_id -> {class_id: cumulative confidence}
+        # canonical_id -> {class_id: accumulated vote weight}
         self.canonical_class_votes: dict[int, dict[int, float]] = {}
         # class_id -> class_name, learned from whatever the model has told us
         self.class_id_to_name: dict[int, str] = {}
@@ -52,7 +54,13 @@ class VehicleAnalyzer:
         """
         expire_identities(self.canonical_tracks, timestamp_seconds, VEHICLE_GAP_SECONDS)
 
-        vehicle_only = [d for d in raw_detections if d["class_id"] in VEHICLE_CLASSES]
+        minimum_area = VEHICLE_MIN_AREA_RATIO * diagonal * diagonal
+
+        vehicle_only = [
+            d
+            for d in raw_detections
+            if d["class_id"] in VEHICLE_CLASSES and d["area"] >= minimum_area
+        ]
         detections = deduplicate_frame_detections(vehicle_only)
 
         resolved = []
@@ -70,15 +78,24 @@ class VehicleAnalyzer:
                 near_distance_threshold=VEHICLE_NEAR_DISTANCE,
                 size_similarity_threshold=VEHICLE_SIZE_SIMILARITY,
                 ema_alpha=VEHICLE_EMA_ALPHA,
+                cross_class_match_threshold=VEHICLE_CROSS_CLASS_MATCH_THRESHOLD,
+                cross_class_min_iou=VEHICLE_CROSS_CLASS_MIN_IOU,
             )
+
+            # sqrt(area) is roughly the box's linear size, so a close
+            # vehicle outweighs a distant one in proportion to how much
+            # more of it the model actually got to look at.
+            weight = detection["confidence"] * (detection["area"] ** 0.5)
 
             votes = self.canonical_class_votes.setdefault(canonical_id, {})
             votes[detection["class_id"]] = (
-                votes.get(detection["class_id"], 0.0) + detection["confidence"]
+                votes.get(detection["class_id"], 0.0) + weight
             )
 
             best_class_id = max(votes, key=votes.get)
-            best_class_name = self.class_id_to_name.get(best_class_id, detection["class_name"])
+            best_class_name = self.class_id_to_name.get(
+                best_class_id, detection["class_name"]
+            )
 
             resolved.append(
                 {
@@ -90,18 +107,15 @@ class VehicleAnalyzer:
             )
 
         active_count = len(resolved)
-        if active_count > self.max_active_vehicles:
-            self.max_active_vehicles = active_count
+        self.max_active_vehicles = max(self.max_active_vehicles, active_count)
 
         return resolved
 
     def build_summary(self) -> dict:
         """Return the final vehicle_analysis section for the output JSON.
 
-        Every track's final class is its highest-confidence-vote class
-        across the whole video, not whatever it was first seen as - this
-        is what actually fixes car/truck double-counting for the same
-        physical vehicle.
+        Every track's final class is its winning weighted vote across the
+        whole video, not whatever it was first seen as.
         """
         vehicle_counts = dict.fromkeys(VEHICLE_CLASSES.values(), 0)
 
