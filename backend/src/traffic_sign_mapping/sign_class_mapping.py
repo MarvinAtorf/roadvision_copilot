@@ -34,7 +34,11 @@ SIGN_MAPPINGS: list[SignMapping] = [
     SignMapping(4, "speed limit 70", "274-70", None, "Zulässige Höchstgeschwindigkeit 70 km/h"),
     SignMapping(5, "speed limit 80", "274-80", None, "Zulässige Höchstgeschwindigkeit 80 km/h"),
     SignMapping(
-        6, "restriction ends 80", "278-80", None, "Ende der zulässigen Höchstgeschwindigkeit 80 km/h"
+        6,
+        "restriction ends 80",
+        "278-80",
+        None,
+        "Ende der zulässigen Höchstgeschwindigkeit 80 km/h",
     ),
     SignMapping(7, "speed limit 100", "274-100", None, "Zulässige Höchstgeschwindigkeit 100 km/h"),
     SignMapping(8, "speed limit 120", "274-120", None, "Zulässige Höchstgeschwindigkeit 120 km/h"),
@@ -91,7 +95,11 @@ SIGN_MAPPINGS: list[SignMapping] = [
     SignMapping(39, "keep left", "222", "links", "Vorbeifahrt links"),
     SignMapping(40, "roundabout", "215", None, "Kreisverkehr"),
     SignMapping(
-        41, "restriction ends - overtaking", "280", None, "Ende des Überholverbots für Kraftfahrzeuge aller Art"
+        41,
+        "restriction ends - overtaking",
+        "280",
+        None,
+        "Ende des Überholverbots für Kraftfahrzeuge aller Art",
     ),
     SignMapping(
         42,

@@ -246,7 +246,6 @@ with st.sidebar:
         st.write(f"Traffic lights: {traffic_light_analysis.get('max_visible_simultaneously', 0)}")
 
         st.markdown("---")
-        
 
         traffic_sign_analysis = data.get("traffic_sign_analysis", {})
         sign_counts = traffic_sign_analysis.get("sign_counts", {})
@@ -260,9 +259,6 @@ with st.sidebar:
 
         if len(sign_counts) > 8:
             st.caption(f"...and {len(sign_counts) - 8} more sign types")
-
-
-
 
     else:
         st.info("Upload and analyze a video to see the results here")

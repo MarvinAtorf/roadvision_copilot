@@ -68,9 +68,9 @@ class SignAnalyzer:
             )
 
             votes = self.canonical_class_votes.setdefault(canonical_id, {})
-            votes[detection["class_id"]] = votes.get(detection["class_id"], 0.0) + detection[
-                "confidence"
-            ]
+            votes[detection["class_id"]] = (
+                votes.get(detection["class_id"], 0.0) + detection["confidence"]
+            )
 
             best_class_id = max(votes, key=votes.get)
             best_class_name = self.class_id_to_name.get(best_class_id, detection["class_name"])
