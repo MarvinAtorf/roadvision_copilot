@@ -3,9 +3,10 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
+from pipelines.analysis_lock import finish, try_start
 from pipelines.cancel_flag import clear_cancel, request_cancel
 from pipelines.live_status import get_status, reset_status
 from pipelines.orchestrator import run_video_analysis
@@ -20,46 +21,54 @@ LATEST_ANALYSIS_JSON = TEMP_DATA_DIR / "roadvision_latest_analysis.json"
 
 @router.post("/analyze/video")
 async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
-    temp_dir = Path(tempfile.gettempdir())
+    # Only one analysis may run at a time (MVP2 scope) — reject immediately,
+    # before touching disk, if another analysis already holds the slot.
+    if not try_start():
+        raise HTTPException(status_code=409, detail="An analysis is already in progress")
 
-    raw_path = temp_dir / f"raw_{file.filename}"
-    output_path = temp_dir / f"processed_{file.filename}"
+    try:
+        temp_dir = Path(tempfile.gettempdir())
 
-    with raw_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        raw_path = temp_dir / f"raw_{file.filename}"
+        output_path = temp_dir / f"processed_{file.filename}"
 
-    reset_status()
-    clear_cancel()
+        with raw_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    # Run the blocking analysis in a worker thread so the event loop stays
-    # free to serve GET /analyze/video/status while this request is in flight.
-    analysis_result = await run_in_threadpool(
-        run_video_analysis,
-        str(raw_path),
-        str(output_path),
-    )
+        reset_status()
+        clear_cancel()
 
-    # Save latest analysis result for the frontend
-    with LATEST_ANALYSIS_JSON.open("w", encoding="utf-8") as json_file:
-        json.dump(
-            analysis_result,
-            json_file,
-            indent=2,
-            ensure_ascii=False,
+        # Run the blocking analysis in a worker thread so the event loop stays
+        # free to serve GET /analyze/video/status while this request is in flight.
+        analysis_result = await run_in_threadpool(
+            run_video_analysis,
+            str(raw_path),
+            str(output_path),
         )
 
-    if analysis_result["status"] == "cancelled":
-        return JSONResponse(
-            status_code=200,
-            content={"status": "cancelled"},
-        )
+        # Save latest analysis result for the frontend
+        with LATEST_ANALYSIS_JSON.open("w", encoding="utf-8") as json_file:
+            json.dump(
+                analysis_result,
+                json_file,
+                indent=2,
+                ensure_ascii=False,
+            )
 
-    # Keep the existing MVP-1 video response unchanged
-    return FileResponse(
-        path=output_path,
-        media_type="video/mp4",
-        filename=f"processed_{file.filename}",
-    )
+        if analysis_result["status"] == "cancelled":
+            return JSONResponse(
+                status_code=200,
+                content={"status": "cancelled"},
+            )
+
+        # Keep the existing MVP-1 video response unchanged
+        return FileResponse(
+            path=output_path,
+            media_type="video/mp4",
+            filename=f"processed_{file.filename}",
+        )
+    finally:
+        finish()
 
 
 @router.post("/analyze/video/cancel")
