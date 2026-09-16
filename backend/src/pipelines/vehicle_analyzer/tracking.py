@@ -67,7 +67,14 @@ def match_existing_identity(
 
 
 def deduplicate_frame_detections(detections, iou_threshold=DEDUP_IOU_THRESHOLD):
-    """Remove duplicate detections from the same frame."""
+    """Remove duplicate detections from the same frame.
+
+    Deliberately still compares within the same class_id here (two
+    genuinely different vehicles overlapping in the same frame should
+    never be merged just because the model flickered on one of them) -
+    the class_id-independent matching only applies across frames, in
+    resolve_canonical_id below.
+    """
     if not detections:
         return []
 
@@ -145,11 +152,13 @@ def resolve_canonical_id(
     current_area = detection["area"]
     current_class_id = detection["class_id"]
 
-    candidates = {
-        canonical_id: identity
-        for canonical_id, identity in canonical_tracks.items()
-        if identity["class_id"] == current_class_id
-    }
+    # Not filtered by class_id: the same physical vehicle can flicker
+    # between "car" and "truck" across frames (common COCO-model
+    # behavior for SUVs/vans), and VehicleAnalyzer's confidence-vote
+    # only works if the spatial track survives across those
+    # disagreements instead of splitting into a new canonical_id every
+    # time the raw classification flips.
+    candidates = dict(canonical_tracks)
 
     matched_id = match_existing_identity(
         current_box=current_box,
@@ -168,6 +177,7 @@ def resolve_canonical_id(
         identity["area"] = box_area(identity["box"])
         identity["last_seen"] = current_time
         identity["confidence"] = detection["confidence"]
+        identity["class_id"] = current_class_id  # track the latest raw class too
 
         return matched_id, next_id, False
 

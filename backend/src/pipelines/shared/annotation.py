@@ -19,16 +19,29 @@ CLASS_COLORS = {
     "traffic_light": (0, 255, 255),  # yellow
 }
 
+# Traffic signs can be dozens of distinct classes (GTSDB taxonomy), so
+# instead of assigning each one its own color, every detection tagged
+# with this category gets one shared, distinct color.
+CATEGORY_COLORS = {
+    "traffic_sign": (0, 140, 255),  # orange-red
+}
+
 DEFAULT_COLOR = (200, 200, 200)  # gray fallback for unmapped classes
 
 
 def draw_detections(frame, detections):
-    """Draw bounding boxes and labels, colored per detected class."""
+    """Draw bounding boxes and labels, colored per detected class.
+
+    Detections carrying a "category" key (e.g. "traffic_sign") are
+    colored by category instead of by their specific class_name, since
+    some categories have too many classes to color individually.
+    """
     for detection in detections:
         x1, y1, x2, y2 = (int(value) for value in detection["box"])
 
         class_name = detection["class_name"]
-        color = CLASS_COLORS.get(class_name, DEFAULT_COLOR)
+        category = detection.get("category")
+        color = CATEGORY_COLORS.get(category) or CLASS_COLORS.get(class_name, DEFAULT_COLOR)
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
 
