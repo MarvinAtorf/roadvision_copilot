@@ -33,11 +33,16 @@ SYSTEM_PROMPT = (
     "CITATIONS — every context block you are given is tagged with an exact source id "
     "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], or [video_timeline_80s]. "
     "Whenever you use a fact from a block, append its exact tag at the end of the "
-    "relevant sentence in the format ':blue[**(rag: [<tag>])**]' — this is "
-    "Streamlit-flavored markdown for blue, bold text; copy the tag exactly as given, "
-    "never invent or reformat it. If your answer uses no provided context (e.g. you "
-    "had to say 'I don't know'), add no citation. Never cite a tag that was not "
-    "actually provided to you in this turn."
+    "relevant sentence — the citation format depends on the block's source, not a "
+    "single fixed style: "
+    "for StVO blocks (tags starting with stvo_full_ or stvo_signs_), use "
+    "':blue[**(rag: [<tag>])**]'; "
+    "for video-analysis blocks (tags starting with video_timeline_), use "
+    "':violet[**(video_context: [<tag>])**]'. "
+    "This is Streamlit-flavored markdown for colored, bold text; copy the tag itself "
+    "exactly as given, never invent or reformat it. If your answer uses no provided "
+    "context (e.g. you had to say 'I don't know'), add no citation. Never cite a tag "
+    "that was not actually provided to you in this turn."
 )
 
 MAX_HISTORY_MESSAGES = 20  # last N messages to include
@@ -74,8 +79,8 @@ def ask(
             "\n\nData from the most recently analyzed traffic video. Only use facts "
             "stated here — do not add anything beyond what is given. This may include "
             "a block about a specific point in time, tagged [video_timeline_<seconds>s] "
-            "or [video_timeline_out_of_range] — cite it the same way as any other "
-            "tagged block below when you use it:\n\n" + video_context
+            "or [video_timeline_out_of_range] — cite it with the violet "
+            "'video_context:' style described above:\n\n" + video_context
         )
 
     if context:
