@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
+from pipelines.cancel_flag import clear_cancel, request_cancel
 from pipelines.live_status import get_status, reset_status
 from pipelines.orchestrator import run_video_analysis
 
@@ -28,6 +29,7 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
         shutil.copyfileobj(file.file, buffer)
 
     reset_status()
+    clear_cancel()
 
     # Run the blocking analysis in a worker thread so the event loop stays
     # free to serve GET /analyze/video/status while this request is in flight.
@@ -46,12 +48,25 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
             ensure_ascii=False,
         )
 
+    if analysis_result["status"] == "cancelled":
+        return JSONResponse(
+            status_code=200,
+            content={"status": "cancelled"},
+        )
+
     # Keep the existing MVP-1 video response unchanged
     return FileResponse(
         path=output_path,
         media_type="video/mp4",
         filename=f"processed_{file.filename}",
     )
+
+
+@router.post("/analyze/video/cancel")
+async def cancel_video_analysis():
+    """Signal the running analysis to stop as soon as possible."""
+    request_cancel()
+    return {"status": "cancel_requested"}
 
 
 @router.get("/analyze/video/status")

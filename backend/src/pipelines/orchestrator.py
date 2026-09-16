@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import cv2
+from pipelines.cancel_flag import is_cancel_requested
 from pipelines.live_status import update_status
 from pipelines.shared.annotation import draw_dashboard, draw_detections
 from pipelines.shared.config import (
@@ -37,6 +38,9 @@ def process_video(
     while, so they don't need re-detecting on every single frame the
     way fast-moving vehicles do). Publishes live progress via
     pipelines.live_status after every frame for the /status endpoint.
+
+    Cooperatively cancellable: checks the shared cancel flag once per
+    batch and stops early (with partial results) if it is set.
     """
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -91,9 +95,14 @@ def process_video(
     timeline = []
     last_detections: list[dict] = []
     last_sign_detections: list[dict] = []
+    cancelled = False
 
     try:
         while True:
+            if is_cancel_requested():
+                cancelled = True
+                break
+
             frames = []
             for _ in range(INFERENCE_BATCH_SIZE):
                 success, frame = cap.read()
@@ -171,13 +180,17 @@ def process_video(
                     raw_sign_detections, timestamp_seconds, diagonal
                 )
 
-                # Publish the current cumulative state for the /status endpoint.
-                # traffic_light_count mirrors the same "max_visible_simultaneously"
-                # metric used in the final report, not a cumulative unique count.
+                # Computed once per frame and reused below for both the
+                # /status update and the on-frame dashboard — the state
+                # does not change in between, so a second call would just
+                # recompute the same numbers.
                 vehicle_summary = vehicle_analyzer.build_summary()
                 traffic_summary = traffic_light_analyzer.build_summary()
                 sign_summary = sign_analyzer.build_summary()
 
+                # Publish the current cumulative state for the /status endpoint.
+                # traffic_light_count mirrors the same "max_visible_simultaneously"
+                # metric used in the final report, not a cumulative unique count.
                 update_status(
                     frame_number=processed_frames,
                     total_frames_in_video=total_frames_in_video,
@@ -271,6 +284,7 @@ def process_video(
         print()
 
     analysis = {
+        "status": "cancelled" if cancelled else "success",
         "video_metadata": {
             "video_path": str(input_path),
             "fps": round(fps, 3),
@@ -307,6 +321,14 @@ def run_video_analysis(input_video_path: str, output_video_path: str) -> dict:
         output_json_path=output_path.with_suffix(".json"),
         verbose=False,
     )
+
+    if results["status"] == "cancelled":
+        return {
+            "status": "cancelled",
+            "input_video": str(input_path),
+            "output_video": None,
+            "data": results,
+        }
 
     reencode_to_h264(output_path)
 

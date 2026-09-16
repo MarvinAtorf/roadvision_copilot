@@ -1,3 +1,4 @@
+import contextlib
 import os
 import threading
 from pathlib import Path
@@ -21,7 +22,8 @@ if "messages" not in st.session_state:
 
 if "analysis_state" not in st.session_state:
     # None = no analysis in flight. While running, holds a plain dict shared
-    # with the background thread: {"running", "video_bytes", "error"}.
+    # with the background thread: {"running", "video_bytes", "error",
+    # "cancelled", "source_filename", "cancel_sent"}.
     st.session_state.analysis_state = None
 
 # CSS to remove top padding and vertical gaps completely
@@ -73,7 +75,17 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
             timeout=1000,
         )
         response.raise_for_status()
-        state["video_bytes"] = response.content
+
+        content_type = response.headers.get("content-type", "")
+        if content_type.startswith("application/json"):
+            # Backend returns JSON only when the analysis was cancelled
+            # server-side before it could finish (see /analyze/video/cancel).
+            state["cancelled"] = True
+            state["video_bytes"] = None
+        else:
+            state["cancelled"] = False
+            state["video_bytes"] = response.content
+
         state["error"] = None
     except requests.exceptions.RequestException as exc:
         state["error"] = str(exc)
@@ -92,6 +104,8 @@ if st.session_state.analysis_state is not None and not st.session_state.analysis
 
     if finished_state["error"]:
         st.session_state.analysis_error = finished_state["error"]
+    elif finished_state.get("cancelled"):
+        st.session_state.analysis_cancelled = True
     else:
         try:
             analysis_response = requests.get(
@@ -121,54 +135,74 @@ with st.sidebar:
 
     if analysis_running:
         # Keep rerunning while the background thread is still working, so
-        # the live counts below stay fresh.
+        # the live counts below stay fresh — and so we notice if the
+        # source video gets removed from the uploader.
         st_autorefresh(interval=750, key="live_status_refresh")
 
-        try:
-            status_response = requests.get(
-                f"{API_BASE_URL}/analyze/video/status",
-                timeout=3,
-            )
-            live_status = status_response.json() if status_response.status_code == 200 else None
-        except requests.exceptions.RequestException:
-            live_status = None
+        # The uploader widget itself is instantiated later in the script
+        # (in the left column), but Streamlit already exposes its current
+        # value here via session_state, since it uses an explicit key.
+        current_upload = st.session_state.get("video_uploader")
+        current_filename = current_upload.name if current_upload is not None else None
+        expected_filename = st.session_state.analysis_state.get("source_filename")
 
-        if live_status:
-            progress = live_status.get("progress_percent", 0)
+        if current_filename != expected_filename and not st.session_state.analysis_state.get(
+            "cancel_sent"
+        ):
+            with contextlib.suppress(requests.exceptions.RequestException):
+                requests.post(f"{API_BASE_URL}/analyze/video/cancel", timeout=3)
+            st.session_state.analysis_state["cancel_sent"] = True
 
-            st.write(f"**Processing... {progress:.0f}%**")
-            st.progress(min(progress / 100, 1.0))
-
-            st.markdown("---")
-
-            st.markdown("**Vehicles**")
-
-            live_vehicle_counts = live_status.get("vehicle_counts", {})
-
-            st.write(f"Cars: {live_vehicle_counts.get('car', 0)}")
-            st.write(f"Trucks: {live_vehicle_counts.get('truck', 0)}")
-            st.write(f"Buses: {live_vehicle_counts.get('bus', 0)}")
-            st.write(f"Motorbikes: {live_vehicle_counts.get('motorbike', 0)}")
-            st.write(f"Bicycles: {live_vehicle_counts.get('bicycle', 0)}")
-
-            st.markdown("---")
-
-            st.markdown(f"**Total vehicles: {live_status.get('total_unique_vehicles', 0)}**")
-
-            st.markdown("---")
-
-            st.markdown("**Traffic**")
-            st.write(f"Traffic lights: {live_status.get('traffic_light_count', 0)}")
-            st.markdown("---")
-            st.markdown("**Traffic Signs**")
-            live_sign_counts = live_status.get("sign_counts", {})
-            st.write(f"Unique signs detected: {live_status.get('total_unique_signs', 0)}")
-            top_live_signs = sorted(live_sign_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-            for sign_name, count in top_live_signs:
-                st.write(f"{sign_name}: {count}")
-
+        if st.session_state.analysis_state.get("cancel_sent"):
+            st.warning("Video removed — cancelling analysis...")
         else:
-            st.info("Starting analysis...")
+            try:
+                status_response = requests.get(
+                    f"{API_BASE_URL}/analyze/video/status",
+                    timeout=3,
+                )
+                live_status = status_response.json() if status_response.status_code == 200 else None
+            except requests.exceptions.RequestException:
+                live_status = None
+
+            if live_status:
+                progress = live_status.get("progress_percent", 0)
+
+                st.write(f"**Processing... {progress:.0f}%**")
+                st.progress(min(progress / 100, 1.0))
+
+                st.markdown("---")
+
+                st.markdown("**Vehicles**")
+
+                live_vehicle_counts = live_status.get("vehicle_counts", {})
+
+                st.write(f"Cars: {live_vehicle_counts.get('car', 0)}")
+                st.write(f"Trucks: {live_vehicle_counts.get('truck', 0)}")
+                st.write(f"Buses: {live_vehicle_counts.get('bus', 0)}")
+                st.write(f"Motorbikes: {live_vehicle_counts.get('motorbike', 0)}")
+                st.write(f"Bicycles: {live_vehicle_counts.get('bicycle', 0)}")
+
+                st.markdown("---")
+
+                st.markdown(f"**Total vehicles: {live_status.get('total_unique_vehicles', 0)}**")
+
+                st.markdown("---")
+
+                st.markdown("**Traffic**")
+                st.write(f"Traffic lights: {live_status.get('traffic_light_count', 0)}")
+
+                st.markdown("---")
+                st.markdown("**Traffic Signs**")
+                live_sign_counts = live_status.get("sign_counts", {})
+                st.write(f"Unique signs detected: {live_status.get('total_unique_signs', 0)}")
+                top_live_signs = sorted(live_sign_counts.items(), key=lambda x: x[1], reverse=True)[
+                    :5
+                ]
+                for sign_name, count in top_live_signs:
+                    st.write(f"{sign_name}: {count}")
+            else:
+                st.info("Starting analysis...")
 
     elif "video_analysis" in st.session_state:
         analysis = st.session_state.video_analysis
@@ -286,7 +320,12 @@ with col1, st.container(border=True, height=700):
     uploaded_video = st.file_uploader(
         "Upload video",
         type=["mp4", "mov", "avi"],
+        key="video_uploader",
     )
+
+    if st.session_state.get("analysis_cancelled"):
+        st.info("Analysis cancelled — the uploaded video was removed.")
+        st.session_state.analysis_cancelled = False
 
     if st.session_state.get("analysis_error"):
         st.error(f"An error occurred while processing the video: {st.session_state.analysis_error}")
@@ -312,6 +351,9 @@ with col1, st.container(border=True, height=700):
                 "running": True,
                 "video_bytes": None,
                 "error": None,
+                "cancelled": False,
+                "source_filename": uploaded_video.name,
+                "cancel_sent": False,
             }
 
             worker_thread = threading.Thread(
