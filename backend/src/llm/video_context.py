@@ -40,13 +40,17 @@ def build_video_context_block() -> str | None:
     metadata = analysis.get("video_metadata", "")
     vehicles = analysis.get("vehicle_analysis", "")
     lights = analysis.get("traffic_light_analysis", "")
+    signs = analysis.get("traffic_sign_analysis", "")
 
     lines = [
+        "[video_summary]",
         f"Video duration: {metadata['duration_seconds']} seconds",
         f"Total unique vehicles detected: {vehicles['total_unique_vehicles']}",
         f"Vehicle breakdown: {vehicles['vehicle_counts']}",
         f"Max active vehicles at once: {vehicles['max_active_vehicles']}",
         f"Traffic lights detected: {lights['total_tracked_traffic_lights']}",
+        f"Total unique traffic signs detected: {signs['total_unique_signs']}",
+        f"Traffic sign breakdown: {signs['sign_counts']}",
     ]
 
     return "\n".join(lines)
