@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 
 import cv2
@@ -13,6 +14,7 @@ from pipelines.shared.config import (
     SIGN_CONFIDENCE_THRESHOLD,
     SIGN_FRAME_STRIDE,
     SIGN_INFERENCE_IMAGE_SIZE,
+    TIMELINE_BUCKET_SECONDS,
     TRACKED_CLASSES,
 )
 from pipelines.shared.detection import extract_detections, extract_sign_detections
@@ -21,6 +23,55 @@ from pipelines.shared.model import get_model, get_sign_model
 from pipelines.sign_analyzer.pipeline import SignAnalyzer
 from pipelines.traffic_light_analyzer.pipeline import TrafficLightAnalyzer
 from pipelines.vehicle_analyzer.pipeline import VehicleAnalyzer
+
+
+def bucket_timeline(
+    timeline: list[dict], bucket_seconds: float = TIMELINE_BUCKET_SECONDS
+) -> list[dict]:
+    """
+    Aggregate the raw per-frame timeline into fixed-width time buckets.
+
+    Buckets are centered on multiples of bucket_seconds (0, 20, 40, ...),
+    so a query for a round timestamp like "80s" lands in the middle of a
+    bucket rather than on its edge. Within each bucket, vehicles and signs
+    are deduplicated by track_id, so a track seen across many frames in
+    the same bucket is counted once.
+    """
+    buckets: dict[float, dict] = {}
+
+    for entry in timeline:
+        center = round(entry["timestamp_seconds"] / bucket_seconds) * bucket_seconds
+
+        bucket = buckets.setdefault(
+            center,
+            {
+                "vehicles": {},
+                "signs": {},
+                "max_traffic_lights_visible": 0,
+            },
+        )
+
+        for d in entry["vehicles"]["detections"]:
+            bucket["vehicles"][d["track_id"]] = d["class"]
+
+        for d in entry["traffic_signs"]["detections"]:
+            bucket["signs"][d["track_id"]] = d["class"]
+
+        bucket["max_traffic_lights_visible"] = max(
+            bucket["max_traffic_lights_visible"],
+            entry["traffic_lights"]["visible_count"],
+        )
+
+    return [
+        {
+            "bucket_center_seconds": center,
+            "window_seconds": [center - bucket_seconds / 2, center + bucket_seconds / 2],
+            "vehicle_counts": dict(Counter(bucket["vehicles"].values())),
+            "sign_counts": dict(Counter(bucket["signs"].values())),
+            "traffic_light_visible": bucket["max_traffic_lights_visible"] > 0,
+        }
+        for center, bucket in sorted(buckets.items())
+    ]
 
 
 def process_video(
@@ -298,6 +349,7 @@ def process_video(
         "traffic_light_analysis": traffic_light_analyzer.build_summary(),
         "traffic_sign_analysis": sign_analyzer.build_summary(),
         "timeline": timeline,
+        "timeline_summary": bucket_timeline(timeline),
     }
 
     if output_json_path is not None:

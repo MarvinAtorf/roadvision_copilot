@@ -72,7 +72,6 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
         response = requests.post(
             f"{api_base_url}/analyze/video",
             files=file_payload,
-            timeout=1000,
         )
         response.raise_for_status()
 
