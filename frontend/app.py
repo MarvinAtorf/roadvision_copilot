@@ -72,6 +72,7 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
         response = requests.post(
             f"{api_base_url}/analyze/video",
             files=file_payload,
+            timeout=1000,
         )
         response.raise_for_status()
 
@@ -98,6 +99,68 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
         state["error"] = str(exc)
     finally:
         state["running"] = False
+
+
+def _parse_mmss_to_seconds(text: str) -> float | None:
+    """Parse an 'mm:ss' string into seconds. Returns None if unparseable."""
+    text = text.strip()
+    parts = text.split(":")
+    if len(parts) != 2:
+        return None
+
+    minutes_str, seconds_str = parts
+    if not (minutes_str.isdigit() and seconds_str.isdigit()):
+        return None
+
+    return float(int(minutes_str) * 60 + int(seconds_str))
+
+
+@st.dialog("Report generieren")
+def report_dialog():
+    st.write("Zeitraum auswählen, der im Report zusammengefasst werden soll.")
+
+    start_text = st.text_input("Start (mm:ss)", key="report_start_input")
+    end_text = st.text_input("Ende (mm:ss)", key="report_end_input")
+
+    if st.button("Report generieren", key="report_generate_button"):
+        start_seconds = _parse_mmss_to_seconds(start_text)
+        end_seconds = _parse_mmss_to_seconds(end_text)
+
+        if start_seconds is None or end_seconds is None:
+            st.error("Bitte Start und Ende im Format mm:ss angeben.")
+            return
+
+        if end_seconds <= start_seconds:
+            st.error("Das Ende muss nach dem Start liegen.")
+            return
+
+        with st.spinner("Report wird generiert — das kann einen Moment dauern..."):
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/analyze/video/report",
+                    json={"start_seconds": start_seconds, "end_seconds": end_seconds},
+                    timeout=180,
+                )
+            except requests.exceptions.RequestException as exc:
+                st.error(f"Backend nicht erreichbar: {exc}")
+                return
+
+        if response.status_code != 200:
+            try:
+                detail = response.json().get("detail", "Unbekannter Fehler.")
+            except ValueError:
+                detail = "Unbekannter Fehler."
+            st.error(f"Report konnte nicht erstellt werden: {detail}")
+            return
+
+        st.success("Report erstellt!")
+        st.download_button(
+            "PDF herunterladen",
+            data=response.content,
+            file_name="roadvision_report.pdf",
+            mime="application/pdf",
+            key="report_download_button",
+        )
 
 
 # ============================================================
@@ -385,8 +448,8 @@ with col1, st.container(border=True, height=700):
 
     col_report, col_clear = st.columns([6, 1])
     with col_report:
-        if uploaded_video:
-            st.button("Generate report")
+        if uploaded_video and st.button("Generate report"):
+            report_dialog()
 
 
 # --- RIGHT CONTAINER (CHATBOT) ---

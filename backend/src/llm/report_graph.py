@@ -26,13 +26,19 @@ from reportlab.platypus import (
 REPORTS_DIR = Path(__file__).resolve().parents[2] / "data" / "temp" / "reports"
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Caps how many frames a single time-range request can produce, regardless
+# of how long the range is — keeps the number of vision calls bounded.
+MAX_RANGE_MOMENTS = 10
+MIN_MOMENT_SPACING_SECONDS = 2.0
+
 
 class ReportState(TypedDict):
     """Shared state passed between all nodes of the report graph."""
 
     analysis: dict | None
     output_video_path: str | None
-    requested_moments: list[dict]  # each: {"timestamp_seconds": float, "note": str}
+    time_range: dict | None  # {"start_seconds": float, "end_seconds": float}
+    requested_moments: list[dict]  # derived internally: [{"timestamp_seconds", "note"}]
     frames: dict[float, bytes]
     # Written concurrently by parallel describe_single_frame branches, so it
     # needs a reducer telling LangGraph how to merge their partial updates
@@ -55,13 +61,47 @@ def load_analysis(state: ReportState) -> ReportState:
     return state
 
 
+def derive_moments_from_range(state: ReportState) -> ReportState:
+    """
+    Turn a user-given time range into a capped list of evenly spaced moments.
+
+    Sampling instead of describing every frame keeps the number of vision
+    calls bounded regardless of how long the requested range is. Both
+    start and end are clamped into [0, duration] — a start beyond the
+    video's length must not survive past this point, or a later, larger
+    end-clamp alone could leave start > end.
+    """
+    if state.get("error"):
+        return state
+
+    duration = state["analysis"]["video_metadata"]["duration_seconds"]
+
+    start = min(max(state["time_range"]["start_seconds"], 0.0), duration)
+    end = min(max(state["time_range"]["end_seconds"], 0.0), duration)
+
+    if end <= start:
+        state["error"] = "The requested time range does not overlap with the video's duration."
+        return state
+
+    span = end - start
+    interval = max(span / MAX_RANGE_MOMENTS, MIN_MOMENT_SPACING_SECONDS)
+
+    moments = []
+    timestamp = start
+    while timestamp <= end and len(moments) < MAX_RANGE_MOMENTS:
+        moments.append({"timestamp_seconds": round(timestamp, 1), "note": ""})
+        timestamp += interval
+
+    state["requested_moments"] = moments
+    return state
+
+
 def validate_moments(state: ReportState) -> ReportState:
     """
     Filter requested moments to those within the video's duration.
 
-    Runs even if load_analysis already set an error, so it doesn't crash
-    on a missing state["analysis"] — it just passes the error through
-    unchanged, and later nodes are expected to do the same.
+    Acts as a defense-in-depth check after derive_moments_from_range (which
+    already clips against the duration) — cheap and harmless to keep.
     """
     if state.get("error"):
         return state
@@ -75,7 +115,7 @@ def validate_moments(state: ReportState) -> ReportState:
     ]
 
     if not valid_moments:
-        state["error"] = "None of the requested timestamps fall within the video's duration."
+        state["error"] = "None of the derived timestamps fall within the video's duration."
 
     state["requested_moments"] = valid_moments
     return state
@@ -163,13 +203,19 @@ def describe_single_frame(payload: dict) -> dict:
         "Describe in plain language what's on the road: roughly how many and what "
         "kind of vehicles, whether a traffic light or specific traffic signs are "
         "visible, and the general situation. "
+        "Pay particular attention to any potential for an accident — for example "
+        "vehicles following too closely, a vehicle or pedestrian on a possible "
+        "collision path, someone stepping into the road, or an otherwise unsafe or "
+        "confusing situation. Only mention this if something in the image actually "
+        "suggests it; do not invent a risk if the scene looks unremarkable. "
+        "If something looks potentially noteworthy — whether a possible accident "
+        "risk or something like a vehicle appearing to be in the intersection while "
+        "a light looks red — mention it as an observation only, in the same prose, "
+        "never as a confirmed traffic violation or a certain accident, since a "
+        "single still frame cannot establish either. "
         "Do not read out or mention license plate numbers, street-facing house "
         "numbers, or any other personally identifiable text visible in the image, "
-        "even partially — describe vehicles and buildings generically instead. "
-        "If something looks potentially noteworthy (e.g. a vehicle appears to be "
-        "in the intersection while a light looks red), you may mention it as an "
-        "observation — never state it as a confirmed traffic violation, since a "
-        "single still frame cannot establish that."
+        "even partially — describe vehicles and buildings generically instead."
     )
 
     try:
@@ -293,13 +339,15 @@ def assemble_report(state: ReportState) -> ReportState:
 _graph_builder = StateGraph(ReportState)
 
 _graph_builder.add_node("load_analysis", load_analysis)
+_graph_builder.add_node("derive_moments_from_range", derive_moments_from_range)
 _graph_builder.add_node("validate_moments", validate_moments)
 _graph_builder.add_node("extract_frames", extract_frames)
 _graph_builder.add_node("describe_single_frame", describe_single_frame)
 _graph_builder.add_node("assemble_report", assemble_report)
 
 _graph_builder.add_edge(START, "load_analysis")
-_graph_builder.add_edge("load_analysis", "validate_moments")
+_graph_builder.add_edge("load_analysis", "derive_moments_from_range")
+_graph_builder.add_edge("derive_moments_from_range", "validate_moments")
 _graph_builder.add_edge("validate_moments", "extract_frames")
 
 # extract_frames doesn't go to a fixed next node — dispatch_frame_descriptions
