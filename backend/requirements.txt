@@ -6,6 +6,7 @@ pydantic
 # LLM / RAG
 anthropic
 llama-index
+langgraph
 llama-index-vector-stores-chroma
 llama-index-embeddings-huggingface
 rank-bm25
