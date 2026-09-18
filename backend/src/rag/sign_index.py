@@ -6,6 +6,8 @@ import chromadb
 from llama_index.core import Document, StorageContext, VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
+from rag.chroma_utils import reset_collection
+
 SIGN_CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "stvo_sign_catalog.json"
 SIGN_COLLECTION_NAME = "stvo_signs"
 
@@ -16,16 +18,6 @@ SIGN_REFERENCE_PATTERN = re.compile(r"(?:Zeichen|Schild)\s*(\d+(?:\.\d+)?)", re.
 
 
 def load_sign_catalog() -> list[dict]:
-    """
-    Loads a catalog of signs from a predefined file path.
-
-    This function reads a JSON file containing a catalog of signs and parses it
-    into a list of dictionaries. The file path is defined by the constant
-    SIGN_CATALOG_PATH.
-
-    :return: A list of dictionaries representing the sign catalog.
-    :rtype: list[dict]
-    """
     with SIGN_CATALOG_PATH.open(encoding="utf-8") as f:
         return json.load(f)
 
@@ -50,7 +42,7 @@ def build_sign_documents() -> list[Document]:
 
 def build_sign_index(chroma_client: chromadb.ClientAPI) -> VectorStoreIndex:
     documents = build_sign_documents()
-    collection = chroma_client.get_or_create_collection(SIGN_COLLECTION_NAME)
+    collection = reset_collection(chroma_client, SIGN_COLLECTION_NAME)
     vector_store = ChromaVectorStore(chroma_collection=collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     return VectorStoreIndex.from_documents(documents, storage_context=storage_context)
@@ -100,3 +92,18 @@ def retrieve_sign_context(
         combined.append(match)
 
     return combined
+
+
+def get_sign_by_number(chroma_client: chromadb.ClientAPI, sign_number: str) -> dict | None:
+    """
+    Fetch a single sign entry by its exact StVO sign number — a direct ID
+    lookup, not a similarity search, so it can never return the wrong sign
+    the way embedding search can for short/ambiguous English class names.
+    """
+    collection = chroma_client.get_or_create_collection(SIGN_COLLECTION_NAME)
+    result = collection.get(ids=[sign_number], include=["documents"])
+
+    if not result["ids"]:
+        return None
+
+    return {"sign_number": sign_number, "text": result["documents"][0]}

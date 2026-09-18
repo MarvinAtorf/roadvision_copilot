@@ -6,6 +6,7 @@ class ReportRangeRequest(BaseModel):
 
     start_seconds: float = Field(ge=0)
     end_seconds: float = Field(gt=0)
+    scenario: str | None = None
 
     @model_validator(mode="after")
     def _check_range(self) -> "ReportRangeRequest":

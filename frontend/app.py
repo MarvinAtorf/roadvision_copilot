@@ -115,47 +115,60 @@ def _parse_mmss_to_seconds(text: str) -> float | None:
     return float(int(minutes_str) * 60 + int(seconds_str))
 
 
-@st.dialog("Report generieren")
+@st.dialog("Generate report")
 def report_dialog():
-    st.write("Zeitraum auswählen, der im Report zusammengefasst werden soll.")
+    st.write("Select the time range to summarize in the report.")
 
     start_text = st.text_input("Start (mm:ss)", key="report_start_input")
-    end_text = st.text_input("Ende (mm:ss)", key="report_end_input")
+    end_text = st.text_input("End (mm:ss)", key="report_end_input")
+    scenario_text = st.text_area(
+        "Check scenario (optional)",
+        key="report_scenario_input",
+        placeholder="e.g. possible right-of-way violation at the intersection",
+        help="If a scenario is given, the report only shows frames that match it — "
+        "otherwise it will note that nothing matching was found in the sample.",
+    )
 
-    if st.button("Report generieren", key="report_generate_button"):
+    if st.button("Generate report", key="report_generate_button"):
         start_seconds = _parse_mmss_to_seconds(start_text)
         end_seconds = _parse_mmss_to_seconds(end_text)
 
         if start_seconds is None or end_seconds is None:
-            st.error("Bitte Start und Ende im Format mm:ss angeben.")
+            st.error("Please enter start and end in mm:ss format.")
             return
 
         if end_seconds <= start_seconds:
-            st.error("Das Ende muss nach dem Start liegen.")
+            st.error("End must be after start.")
             return
 
-        with st.spinner("Report wird generiert — das kann einen Moment dauern..."):
+        scenario = scenario_text.strip() or None
+
+        with st.spinner("Generating report — this may take a moment..."):
             try:
                 response = requests.post(
                     f"{API_BASE_URL}/analyze/video/report",
-                    json={"start_seconds": start_seconds, "end_seconds": end_seconds},
+                    json={
+                        "start_seconds": start_seconds,
+                        "end_seconds": end_seconds,
+                        "scenario": scenario,
+                    },
                     timeout=180,
                 )
             except requests.exceptions.RequestException as exc:
-                st.error(f"Backend nicht erreichbar: {exc}")
+                st.error(f"Backend not reachable: {exc}")
                 return
 
         if response.status_code != 200:
             try:
-                detail = response.json().get("detail", "Unbekannter Fehler.")
+                detail = response.json().get("detail", "Unknown error.")
             except ValueError:
-                detail = "Unbekannter Fehler."
-            st.error(f"Report konnte nicht erstellt werden: {detail}")
+                detail = "Unknown error."
+            st.error(f"Report could not be created: {detail}")
             return
 
-        st.success("Report erstellt!")
+        st.success("Report created!")
         st.download_button(
-            "PDF herunterladen",
+            "Download PDF",
             data=response.content,
             file_name="roadvision_report.pdf",
             mime="application/pdf",

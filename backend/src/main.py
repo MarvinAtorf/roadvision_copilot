@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 import chromadb
 from fastapi import FastAPI
+from rag.reindex import ensure_indexes
 from routes import chat, health, video
 
 logger = logging.getLogger("roadvision")
@@ -31,6 +32,11 @@ async def lifespan(app: FastAPI):
         (logger.info if status == "ok" else logger.warning)(f"{name}: {status}")
 
     app.state.chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
+
+    if app.state.service_status["chromadb"] == "ok":
+        ensure_indexes(app.state.chroma_client)
+    else:
+        logger.warning("Skipping RAG index check — ChromaDB unreachable at startup.")
 
     yield
 

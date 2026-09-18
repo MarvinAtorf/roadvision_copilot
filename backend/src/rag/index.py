@@ -4,6 +4,7 @@ import chromadb
 from llama_index.core import Document, StorageContext, VectorStoreIndex
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
+from rag.chroma_utils import reset_collection
 from rag.ingest_stvo import DEFAULT_PDF_PATH, chunk_by_paragraph, extract_stvo_text
 
 CHROMA_COLLECTION_NAME = "stvo_full"
@@ -32,7 +33,7 @@ def build_documents(pdf_path=DEFAULT_PDF_PATH) -> list[Document]:
 
 def build_index(chroma_client: chromadb.ClientAPI) -> VectorStoreIndex:
     documents = build_documents()
-    collection = chroma_client.get_or_create_collection(CHROMA_COLLECTION_NAME)
+    collection = reset_collection(chroma_client, CHROMA_COLLECTION_NAME)
     vector_store = ChromaVectorStore(chroma_collection=collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     return VectorStoreIndex.from_documents(documents, storage_context=storage_context)
