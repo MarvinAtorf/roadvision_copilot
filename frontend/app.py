@@ -72,7 +72,6 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
         response = requests.post(
             f"{api_base_url}/analyze/video",
             files=file_payload,
-            timeout=1000,
         )
         response.raise_for_status()
 
@@ -115,26 +114,26 @@ def _parse_mmss_to_seconds(text: str) -> float | None:
     return float(int(minutes_str) * 60 + int(seconds_str))
 
 
-@st.dialog("Report generieren")
+@st.dialog("generate report")
 def report_dialog():
-    st.write("Zeitraum auswählen, der im Report zusammengefasst werden soll.")
+    st.write("define a timeline for the report.")
 
     start_text = st.text_input("Start (mm:ss)", key="report_start_input")
     end_text = st.text_input("Ende (mm:ss)", key="report_end_input")
 
-    if st.button("Report generieren", key="report_generate_button"):
+    if st.button("generate report", key="report_generate_button"):
         start_seconds = _parse_mmss_to_seconds(start_text)
         end_seconds = _parse_mmss_to_seconds(end_text)
 
         if start_seconds is None or end_seconds is None:
-            st.error("Bitte Start und Ende im Format mm:ss angeben.")
+            st.error("Please enter start and end in the format mm:ss.")
             return
 
         if end_seconds <= start_seconds:
-            st.error("Das Ende muss nach dem Start liegen.")
+            st.error("The end must be after the start.")
             return
 
-        with st.spinner("Report wird generiert — das kann einen Moment dauern..."):
+        with st.spinner("report is generating, this will take some time"):
             try:
                 response = requests.post(
                     f"{API_BASE_URL}/analyze/video/report",
@@ -142,20 +141,20 @@ def report_dialog():
                     timeout=180,
                 )
             except requests.exceptions.RequestException as exc:
-                st.error(f"Backend nicht erreichbar: {exc}")
+                st.error(f"Backend not readable: {exc}")
                 return
 
         if response.status_code != 200:
             try:
-                detail = response.json().get("detail", "Unbekannter Fehler.")
+                detail = response.json().get("detail", "unknown error.")
             except ValueError:
-                detail = "Unbekannter Fehler."
-            st.error(f"Report konnte nicht erstellt werden: {detail}")
+                detail = "unknown error."
+            st.error(f"report could not be generated: {detail}")
             return
 
-        st.success("Report erstellt!")
+        st.success("report generated!")
         st.download_button(
-            "PDF herunterladen",
+            "download pdf",
             data=response.content,
             file_name="roadvision_report.pdf",
             mime="application/pdf",
