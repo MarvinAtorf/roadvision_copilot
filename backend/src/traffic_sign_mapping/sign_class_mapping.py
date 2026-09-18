@@ -111,6 +111,12 @@ SIGN_MAPPINGS: list[SignMapping] = [
 ]
 
 _BY_CLASS_ID: dict[int, SignMapping] = {m.class_id: m for m in SIGN_MAPPINGS}
+_BY_CLASS_NAME: dict[str, SignMapping] = {m.model_class_name: m for m in SIGN_MAPPINGS}
+
+
+def lookup_by_class_name(model_class_name: str) -> SignMapping | None:
+    """Look up the StVO sign mapping for a model class name (e.g. "no entry")."""
+    return _BY_CLASS_NAME.get(model_class_name)
 
 
 def lookup_by_class_id(class_id: int) -> SignMapping | None:

@@ -3,7 +3,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
 from llm.report_graph import _report_graph
@@ -130,18 +130,22 @@ async def clear_video_analysis():
 
 
 @router.post("/analyze/video/report")
-async def generate_report(payload: ReportRangeRequest):
-    """Generate a PDF report summarizing a user-selected time range of the video."""
+async def generate_report(payload: ReportRangeRequest, request: Request):
+    """Generate a PDF report summarizing a user-selected time range of the video,
+    optionally filtered to frames matching a user-described scenario."""
     initial_state = {
         "analysis": None,
         "output_video_path": None,
+        "chroma_client": request.app.state.chroma_client,
         "time_range": {
             "start_seconds": payload.start_seconds,
             "end_seconds": payload.end_seconds,
         },
+        "scenario": payload.scenario,
         "requested_moments": [],
         "frames": {},
         "descriptions": {},
+        "scenario_matches": {},
         "report_path": None,
         "error": None,
     }
