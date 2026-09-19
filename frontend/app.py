@@ -72,7 +72,6 @@ def _run_analysis_worker(state: dict, api_base_url: str, file_payload: dict) -> 
         response = requests.post(
             f"{api_base_url}/analyze/video",
             files=file_payload,
-            timeout=1000,
         )
         response.raise_for_status()
 
@@ -113,6 +112,88 @@ def _parse_mmss_to_seconds(text: str) -> float | None:
         return None
 
     return float(int(minutes_str) * 60 + int(seconds_str))
+
+
+def _render_stat_grid(items: list[tuple[str, int]], per_row: int = 3) -> None:
+    """
+    Render (label, value) pairs as a compact grid of columns, `per_row`
+    columns per row, instead of one `st.write` line per item — this is what
+    keeps the sidebar short enough to never need scrolling.
+
+    :param items: Ordered (label, value) pairs to display.
+    :param per_row: Maximum number of columns per row.
+    """
+    for row_start in range(0, len(items), per_row):
+        row_items = items[row_start : row_start + per_row]
+        cols = st.columns(per_row)
+        for col, (label, value) in zip(cols, row_items, strict=False):
+            col.markdown(f"**{value}**")
+            col.caption(label)
+
+
+def _render_sidebar_stats(
+    *,
+    vehicle_counts: dict,
+    total_vehicles: int,
+    traffic_light_count: int,
+    sign_counts: dict,
+    total_signs: int,
+    duration: float | None = None,
+    max_signs_shown: int = 8,
+) -> None:
+    """
+    Render the stats block shared by the live-status and finished-analysis
+    sidebar views.
+
+    Laid out as a compact top-line summary + a small grid for the vehicle
+    breakdown + a collapsed expander for the (potentially long) sign
+    breakdown, instead of one long vertical list — used by both the
+    in-progress view and the finished-analysis view so the two can't drift
+    apart from each other.
+
+    :param vehicle_counts: Mapping of vehicle type -> count.
+    :param total_vehicles: Total unique vehicles tracked.
+    :param traffic_light_count: Traffic light count (live) or max
+        simultaneously visible (finished analysis).
+    :param sign_counts: Mapping of sign name -> count.
+    :param total_signs: Total unique signs detected.
+    :param duration: Video duration in seconds. Pass None while the video is
+        still processing, since the final duration isn't known yet.
+    :param max_signs_shown: Max number of sign rows listed before truncating.
+    """
+    top_items = [
+        ("Vehicles", total_vehicles),
+        ("Signs", total_signs),
+        ("Lights", traffic_light_count),
+    ]
+    if duration is not None:
+        top_items.append(("Duration", f"{duration:.1f}s"))
+
+    top_cols = st.columns(len(top_items))
+    for col, (label, value) in zip(top_cols, top_items, strict=False):
+        col.metric(label, value)
+
+    st.markdown("**Vehicle breakdown**")
+    _render_stat_grid(
+        [
+            ("Cars", vehicle_counts.get("car", 0)),
+            ("Trucks", vehicle_counts.get("truck", 0)),
+            ("Buses", vehicle_counts.get("bus", 0)),
+            ("Motorbikes", vehicle_counts.get("motorbike", 0)),
+            ("Bicycles", vehicle_counts.get("bicycle", 0)),
+        ],
+        per_row=3,
+    )
+
+    if sign_counts:
+        with st.expander(f"Traffic sign breakdown ({total_signs} unique)"):
+            top_signs = sorted(sign_counts.items(), key=lambda x: x[1], reverse=True)
+            for sign_name, count in top_signs[:max_signs_shown]:
+                st.write(f"{sign_name}: {count}")
+            if len(top_signs) > max_signs_shown:
+                st.caption(f"...and {len(top_signs) - max_signs_shown} more sign types")
+    else:
+        st.caption("No traffic signs detected yet.")
 
 
 @st.dialog("Generate report")
@@ -256,34 +337,13 @@ with st.sidebar:
 
                 st.markdown("---")
 
-                st.markdown("**Vehicles**")
-
-                live_vehicle_counts = live_status.get("vehicle_counts", {})
-
-                st.write(f"Cars: {live_vehicle_counts.get('car', 0)}")
-                st.write(f"Trucks: {live_vehicle_counts.get('truck', 0)}")
-                st.write(f"Buses: {live_vehicle_counts.get('bus', 0)}")
-                st.write(f"Motorbikes: {live_vehicle_counts.get('motorbike', 0)}")
-                st.write(f"Bicycles: {live_vehicle_counts.get('bicycle', 0)}")
-
-                st.markdown("---")
-
-                st.markdown(f"**Total vehicles: {live_status.get('total_unique_vehicles', 0)}**")
-
-                st.markdown("---")
-
-                st.markdown("**Traffic**")
-                st.write(f"Traffic lights: {live_status.get('traffic_light_count', 0)}")
-
-                st.markdown("---")
-                st.markdown("**Traffic Signs**")
-                live_sign_counts = live_status.get("sign_counts", {})
-                st.write(f"Unique signs detected: {live_status.get('total_unique_signs', 0)}")
-                top_live_signs = sorted(live_sign_counts.items(), key=lambda x: x[1], reverse=True)[
-                    :5
-                ]
-                for sign_name, count in top_live_signs:
-                    st.write(f"{sign_name}: {count}")
+                _render_sidebar_stats(
+                    vehicle_counts=live_status.get("vehicle_counts", {}),
+                    total_vehicles=live_status.get("total_unique_vehicles", 0),
+                    traffic_light_count=live_status.get("traffic_light_count", 0),
+                    sign_counts=live_status.get("sign_counts", {}),
+                    total_signs=live_status.get("total_unique_signs", 0),
+                )
             else:
                 st.info("Starting analysis...")
 
@@ -310,72 +370,16 @@ with st.sidebar:
             {},
         )
 
-        vehicle_counts = vehicle_analysis.get(
-            "vehicle_counts",
-            {},
-        )
-
-        # --------------------------------------------------------
-        # Duration
-        # --------------------------------------------------------
-
-        duration = video_metadata.get(
-            "duration_seconds",
-            0,
-        )
-
-        st.write(f"**Duration:** {duration:.1f} s")
-
-        st.markdown("---")
-
-        # --------------------------------------------------------
-        # Vehicles
-        # --------------------------------------------------------
-
-        st.markdown("**Vehicles**")
-
-        st.write(f"Cars: {vehicle_counts.get('car', 0)}")
-
-        st.write(f"Trucks: {vehicle_counts.get('truck', 0)}")
-
-        st.write(f"Buses: {vehicle_counts.get('bus', 0)}")
-
-        st.write(f"Motorbikes: {vehicle_counts.get('motorbike', 0)}")
-
-        st.write(f"Bicycles: {vehicle_counts.get('bicycle', 0)}")
-
-        st.markdown("---")
-
-        # --------------------------------------------------------
-        # Total vehicles
-        # --------------------------------------------------------
-
-        st.markdown(f"**Total vehicles: {vehicle_analysis.get('total_unique_vehicles', 0)}**")
-
-        st.markdown("---")
-
-        # --------------------------------------------------------
-        # Traffic
-        # --------------------------------------------------------
-
-        st.markdown("**Traffic**")
-
-        st.write(f"Traffic lights: {traffic_light_analysis.get('max_visible_simultaneously', 0)}")
-
-        st.markdown("---")
-
         traffic_sign_analysis = data.get("traffic_sign_analysis", {})
-        sign_counts = traffic_sign_analysis.get("sign_counts", {})
 
-        st.markdown("**Traffic signs**")
-        st.write(f"Unique signs detected: {traffic_sign_analysis.get('total_unique_signs', 0)}")
-
-        top_signs = sorted(sign_counts.items(), key=lambda x: x[1], reverse=True)[:8]
-        for sign_name, count in top_signs:
-            st.write(f"{sign_name}: {count}")
-
-        if len(sign_counts) > 8:
-            st.caption(f"...and {len(sign_counts) - 8} more sign types")
+        _render_sidebar_stats(
+            vehicle_counts=vehicle_analysis.get("vehicle_counts", {}),
+            total_vehicles=vehicle_analysis.get("total_unique_vehicles", 0),
+            traffic_light_count=traffic_light_analysis.get("max_visible_simultaneously", 0),
+            sign_counts=traffic_sign_analysis.get("sign_counts", {}),
+            total_signs=traffic_sign_analysis.get("total_unique_signs", 0),
+            #  duration=video_metadata.get("duration_seconds", 0),
+        )
 
     else:
         st.info("Upload and analyze a video to see the results here")
