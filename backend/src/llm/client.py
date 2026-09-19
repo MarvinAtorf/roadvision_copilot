@@ -31,12 +31,14 @@ SYSTEM_PROMPT = (
     "[video_timeline_out_of_range] instead, tell the user the requested time falls "
     "outside the video's duration rather than guessing at an answer. "
     "CITATIONS — every context block you are given is tagged with an exact source id "
-    "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], [video_summary], or "
-    "[video_timeline_80s]. Whenever you use a fact from a block, append its exact tag "
-    "at the end of the relevant sentence — the citation format depends on the block's "
-    "source, not a single fixed style: "
+    "in square brackets, e.g. [stvo_full_§3], [stvo_signs_274], [video_summary], "
+    "[video_timeline_80s], or [bussgeldkatalog_rote_ampel]. Whenever you use a fact "
+    "from a block, append its exact tag at the end of the relevant sentence — the "
+    "citation format depends on the block's source, not a single fixed style: "
     "for StVO blocks (tags starting with stvo_full_ or stvo_signs_), use "
     "':blue[**(rag: [<tag>])**]'; "
+    "for Bußgeldkatalog blocks (tags starting with bussgeldkatalog_), use "
+    "':red[**(rag: [<tag>])**]'; "
     "for video-analysis blocks (any tag starting with video_, including "
     "video_summary and video_timeline_*), use "
     "':violet[**(video_context: [<tag>])**]'. "
@@ -65,10 +67,27 @@ def _build_context_block(context: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
+def _bussgeld_tag(category: str) -> str:
+    """Turn a Bußgeldkatalog category name (e.g. "ROTE AMPEL") into a short,
+    stable citation tag (e.g. "bussgeldkatalog_rote_ampel") for the model to
+    cite verbatim."""
+    slug = category.lower().replace("&", "und").replace(" ", "_")
+    return f"**bussgeldkatalog_{slug}**"
+
+
+def _build_bussgeld_context_block(context: list[dict]) -> str:
+    """Turn retrieved Bußgeldkatalog categories into a tagged text block for
+    the system prompt — same shape as _build_context_block, just for the
+    fine-catalog source instead of the StVO paragraphs."""
+    parts = [f"[{_bussgeld_tag(c['category'])}]\n{c['text']}" for c in context]
+    return "\n\n".join(parts)
+
+
 def ask(
     history: list[dict],
     context: list[dict] | None = None,
     video_context: str | None = None,
+    bussgeld_context: list[dict] | None = None,
 ) -> str:
     trimmed = history[-MAX_HISTORY_MESSAGES:]
     messages: list[MessageParam] = [{"role": m["role"], "content": m["content"]} for m in trimmed]
@@ -91,6 +110,18 @@ def ask(
             "excerpts — do not add anything beyond what they say. Each excerpt is "
             "tagged with its exact citation id in square brackets:\n\n"
             + _build_context_block(context)
+        )
+
+    if bussgeld_context:
+        system_prompt += (
+            "\n\nRelevant excerpts from the Bußgeldkatalog (German fine catalog) "
+            "that may help answer the question. Only use facts stated in these "
+            "excerpts — do not add anything beyond what they say, and never state "
+            "a fine amount, point count, or driving ban that isn't explicitly given "
+            "here. Cite these with the red 'rag:' style described above — a "
+            "different color from the StVO excerpts, so the two sources stay "
+            "visually distinct. Each excerpt is tagged with its exact citation id "
+            "in square brackets:\n\n" + _build_bussgeld_context_block(bussgeld_context)
         )
 
     response: Message = client.messages.create(

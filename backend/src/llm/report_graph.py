@@ -19,6 +19,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
+    Flowable,
     HRFlowable,
     Image,
     KeepTogether,
@@ -33,8 +34,8 @@ REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Caps how many frames a single time-range request can produce, regardless
 # of how long the range is — keeps the number of vision calls bounded.
-MAX_RANGE_MOMENTS = 10
-MIN_MOMENT_SPACING_SECONDS = 2.0
+MAX_RANGE_MOMENTS = 12
+MIN_MOMENT_SPACING_SECONDS = 1.0
 
 # Caps how many distinct signs get a lookup per frame, so a bucket with
 # many detected sign types doesn't balloon the prompt.
@@ -306,6 +307,26 @@ def _extract_match_line(text: str, scenario_given: bool) -> tuple[str, bool]:
     return text.strip(), False
 
 
+_HYPOTHETICAL_FINE_PATTERN = re.compile(r"\bHypothetically,.*", re.IGNORECASE | re.DOTALL)
+
+
+def _strip_unearned_fine_mention(description: str, matched: bool) -> str:
+    """
+    Remove a hypothetical-fine sentence the model attached despite answering
+    MATCH: no.
+
+    The prompt tells the model to add the fine sentence only when the
+    relevant context is present (MATCH: yes), and to always start it with
+    "Hypothetically, ...". Under ambiguous or hedged reasoning the model
+    sometimes adds it anyway while still (correctly) answering MATCH: no —
+    this is a deterministic backstop so a Bußgeldkatalog citation never ends
+    up attached to a frame that wasn't actually confirmed as relevant.
+    """
+    if matched:
+        return description
+    return _HYPOTHETICAL_FINE_PATTERN.sub("", description).strip()
+
+
 def describe_single_frame(payload: dict) -> dict:
     """
     Describe one frame via a vision-capable Claude call.
@@ -351,68 +372,66 @@ def describe_single_frame(payload: dict) -> dict:
 
     if scenario:
         prompt += (
-            f"\n\nThe user wants to check whether this frame could show the "
-            f'following situation: "{scenario}". Look carefully for anything in '
-            "the image that would support or rule this out — for example, for a "
-            "right-of-way ('rechts vor links') question: whether the intersection "
-            "has no traffic light or priority/stop sign, and whether two vehicles "
-            "from different directions appear to be in a crossing situation; for a "
-            "red-light question: whether a vehicle appears to be in or entering the "
-            "intersection while the light looks red; for a stop-sign question: "
-            "whether a vehicle appears to be past a visible stop sign without "
-            "having stopped. "
-            "If the scenario concerns something a single still image cannot show — "
-            "such as vehicle speed, acceleration, or anything that requires "
-            "comparing motion over time or knowing what happened before or after "
-            "this moment — say so explicitly (e.g. 'a still frame cannot show "
-            "vehicle speed') and answer 'MATCH: no', since guessing here would be "
+            f"\n\nThe user is asking a hypothetical 'what if' question: "
+            f'"{scenario}". This is NOT asking whether a vehicle actually did '
+            "this in the video — it's asking what would apply IF this action or "
+            "situation occurred here. Your job is to judge whether THIS FRAME "
+            "shows the situational context relevant to that question — the "
+            "elements needed to meaningfully answer it — not whether a vehicle "
+            "is shown actually doing it. For example: for a 'drove through a red "
+            "light' question, the relevant context is an intersection with a red "
+            "light visible for this direction of travel — whether or not any "
+            "vehicle is shown crossing it. For a right-of-way ('rechts vor "
+            "links') question, the relevant context is an intersection with no "
+            "traffic light or priority/stop sign, regardless of whether a "
+            "vehicle is shown crossing it unsafely. For a question about a "
+            "vehicle's position or spacing right now (e.g. riding close between "
+            "two other vehicles), the relevant context is that spatial situation "
+            "itself, since it's directly observable in a still image. "
+            "If the scenario concerns something that requires observing motion "
+            "or change over time to identify even the relevant context (e.g. "
+            "vehicle speed, acceleration) — not just the hypothetical action "
+            "itself — say so explicitly (e.g. 'a still frame cannot show vehicle "
+            "speed') and answer 'MATCH: no', since guessing here would be "
             "misleading rather than helpful. "
-            "However, a scenario about POSITION or SPACING at this specific moment "
-            "(e.g. how close a vehicle is to another, or to a lane edge) IS something "
-            "a still image can show — judge that confidently based on what's visible, "
-            "and do not decline it just because you can't observe motion; only "
-            "decline when the scenario itself inherently requires seeing change over "
-            "time, not merely because full certainty would benefit from video. "
-            "If the image plausibly supports the scenario, focus your description "
-            "specifically on explaining what you see that suggests it — which "
-            "vehicles, their approximate positions, and why that looks consistent "
-            "with the described situation, still within the 3-to-5-sentence limit "
-            "above. Still phrase this as an observation, never as a confirmed "
-            "violation, since a single still frame cannot establish that with "
-            "certainty."
+            "If the relevant context IS present, describe what you see that "
+            "establishes it, then address the hypothetical: what would apply if "
+            "the described action or situation occurred here, still within the "
+            "3-to-5-sentence limit above. Do not claim any vehicle in the frame "
+            "actually did this — describe only what establishes the context, "
+            "and frame the rest purely as the hypothetical answer."
         )
 
         if bussgeld_context_block:
             prompt += (
-                "\n\nIf — and only if — you determine the image plausibly supports "
-                "the scenario, add one final sentence clearly framed as a "
+                "\n\nIf — and only if — the relevant context for the hypothetical "
+                "is present, add one final sentence clearly framed as a "
                 "hypothetical, starting with something like 'Hypothetically, if "
-                "this were confirmed as such a violation, ...', naming only the "
-                "fine amount and points that the Bußgeldkatalog information below "
-                "generally states for the matching case — cite it in plain text "
-                "using exactly this format: (Quelle: Bußgeldkatalog - <category>). "
+                "this action were taken here, ...', naming only the fine amount "
+                "and points that the Bußgeldkatalog information below generally "
+                "states for the matching case — cite it in plain text using "
+                "exactly this format: (Quelle: Bußgeldkatalog - <category>). "
                 "No markdown, no color tags, since this text goes directly into a "
-                "PDF. Never drop the hypothetical framing, never imply this "
-                "vehicle actually committed the violation, and never invent a "
-                "fine amount not present in the information below." + bussgeld_context_block
+                "PDF. Never imply any vehicle in the frame actually did this, and "
+                "never invent a fine amount not present in the information "
+                "below." + bussgeld_context_block
             )
 
         prompt += (
-            "\n\nIf the image does NOT plausibly support this scenario, write only "
-            "one short sentence saying so — no need for detail, since this frame "
-            "will not be included in the final report. "
+            "\n\nIf the relevant context is NOT present in this frame, write only "
+            "one short sentence saying so — briefly note what IS visible instead, "
+            "since this frame may still be shown in the report as evidence even "
+            "when it does not match. "
             "After your description, on its own new line, write exactly "
-            "'MATCH: yes' if the frame plausibly supports the described scenario, "
-            "or 'MATCH: no' if it does not. "
-            "Important: 'MATCH: yes' means the visual evidence is CONSISTENT WITH "
-            "the scenario — not that you have fully confirmed an actual violation "
-            "or risk occurred. If your description above concludes the image is "
-            "consistent with the scenario (even with the normal caveat that a "
-            "still frame can't prove motion, intent, or outcome), answer "
-            "'MATCH: yes'. Only answer 'MATCH: no' when the image actually "
-            "contradicts the scenario, shows no relevant evidence at all, or the "
+            "'MATCH: yes' if this frame shows the situational context relevant "
+            "to the hypothetical, or 'MATCH: no' if it does not. "
+            "Important: 'MATCH: yes' means the CONTEXT needed to answer the "
+            "hypothetical is visible — not that any vehicle actually performed "
+            "the action. Only answer 'MATCH: no' when the relevant context is "
+            "genuinely absent (e.g. no red light, no intersection, or no "
+            "relevant sign visible for a rule-based question) or when the "
             "scenario itself requires seeing motion that a still image cannot "
-            "show (as above). This line is required and must be the last line "
+            "show, as above. This line is required and must be the last line "
             "of your reply."
         )
     else:
@@ -469,6 +488,7 @@ def describe_single_frame(payload: dict) -> dict:
         raw_text = f"Description unavailable ({exc})."
 
     description, matched = _extract_match_line(raw_text, scenario_given=bool(scenario))
+    description = _strip_unearned_fine_mention(description, matched)
 
     return {
         "descriptions": {timestamp: description},
@@ -482,6 +502,45 @@ def _format_counts(counts: dict[str, int]) -> str:
     non_zero = {label: count for label, count in counts.items() if count > 0}
     sorted_items = sorted(non_zero.items(), key=lambda item: item[1], reverse=True)
     return ", ".join(f"{label}: {count}" for label, count in sorted_items)
+
+
+def _build_moment_block(
+    timestamp: float,
+    frame_bytes: bytes,
+    description: str,
+    image_width: float,
+    image_height: float,
+    moment_heading_style: ParagraphStyle,
+    body_style: ParagraphStyle,
+) -> Flowable:
+    """
+    Build the image+description flowable for a single moment, kept together
+    on one page.
+
+    Factored out of assemble_report so the exact same rendering is used both
+    for matching moments (scenario given, MATCH: yes) and, since a report
+    should stay verifiable even when nothing matched, for the sampled
+    moments shown as evidence when a scenario has zero matches.
+
+    :param timestamp: The moment's timestamp in seconds.
+    :param frame_bytes: JPEG bytes of the extracted frame.
+    :param description: The model-written description for this moment.
+    :param image_width: Rendered image width, in ReportLab units.
+    :param image_height: Rendered image height, in ReportLab units.
+    :param moment_heading_style: Paragraph style for the "At Ns" heading.
+    :param body_style: Paragraph style for the description text.
+    :return: A KeepTogether flowable ready to append to the report story.
+    """
+    return KeepTogether(
+        [
+            Paragraph(f"At {timestamp:.0f}s", moment_heading_style),
+            Spacer(1, 0.15 * cm),
+            Image(io.BytesIO(frame_bytes), width=image_width, height=image_height),
+            Spacer(1, 0.15 * cm),
+            Paragraph(description, body_style),
+            Spacer(1, 0.4 * cm),
+        ]
+    )
 
 
 def assemble_report(state: ReportState) -> ReportState:
@@ -521,9 +580,52 @@ def assemble_report(state: ReportState) -> ReportState:
         bottomMargin=1.6 * cm,
     )
 
+    video_width = metadata["width"]
+    video_height = metadata["height"]
+    image_width = 12 * cm
+    image_height = image_width * (video_height / video_width)
+
+    # scenario_matches defaults every frame to True when no scenario was
+    # given (see _extract_match_line), so this filter is a no-op in that
+    # case and every sampled frame is included, same as before. Computed
+    # here (before the story is built) so the top-of-report verdict banner
+    # below can use it too.
+    matching_timestamps = sorted(
+        ts for ts in state["frames"] if state["scenario_matches"].get(ts, True)
+    )
+
     story = [
         Paragraph("RoadVision Copilot — Traffic Analysis Report", title_style),
-        Spacer(1, 0.5 * cm),
+        Spacer(1, 0.4 * cm),
+    ]
+
+    # Scenario verdict goes first, right under the title — before the
+    # summary — so a reader (or Marvin during the presentation) sees
+    # immediately whether the tested case came back positive or negative,
+    # without having to scroll or read the frame-by-frame descriptions.
+    if scenario:
+        matched_overall = bool(matching_timestamps)
+        verdict_style = ParagraphStyle(
+            "ScenarioVerdict",
+            parent=styles["Heading1"],
+            fontSize=15,
+            textColor=colors.HexColor("#1a7a33") if matched_overall else colors.HexColor("#b3261e"),
+            spaceBefore=2,
+            spaceAfter=6,
+        )
+        verdict_text = (
+            "✓ MATCH — evidence found" if matched_overall else "✗ NO MATCH — no evidence found"
+        )
+
+        story.append(Paragraph("Scenario Check", heading_style))
+        story.append(Paragraph(f'Checked against: "{scenario}"', body_style))
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(verdict_text, verdict_style))
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(HRFlowable(width="100%", color=colors.lightgrey))
+        story.append(Spacer(1, 0.4 * cm))
+
+    story += [
         Paragraph("Summary", heading_style),
         Paragraph(f"Video duration: {metadata['duration_seconds']:.1f} s", body_style),
         Paragraph(f"Total unique vehicles: {vehicles['total_unique_vehicles']}", body_style),
@@ -538,25 +640,22 @@ def assemble_report(state: ReportState) -> ReportState:
         Spacer(1, 0.4 * cm),
     ]
 
-    if scenario:
-        story.append(Paragraph("Scenario Check", heading_style))
-        story.append(Paragraph(f'Checked against: "{scenario}"', body_style))
-        story.append(Spacer(1, 0.3 * cm))
-    else:
+    if not scenario:
         story.append(Paragraph("Selected Moments", heading_style))
         story.append(Spacer(1, 0.2 * cm))
-
-    video_width = metadata["width"]
-    video_height = metadata["height"]
-    image_width = 12 * cm
-    image_height = image_width * (video_height / video_width)
-
-    # scenario_matches defaults every frame to True when no scenario was
-    # given (see _extract_match_line), so this filter is a no-op in that
-    # case and every sampled frame is included, same as before.
-    matching_timestamps = sorted(
-        ts for ts in state["frames"] if state["scenario_matches"].get(ts, True)
-    )
+    elif matching_timestamps:
+        story.append(Paragraph("Matching Moment", heading_style))
+        story.append(Spacer(1, 0.2 * cm))
+        if len(matching_timestamps) > 1:
+            story.append(
+                Paragraph(
+                    f"{len(matching_timestamps)} of the sampled moments matched the "
+                    "scenario; the earliest one is shown below as representative "
+                    "evidence.",
+                    body_style,
+                )
+            )
+            story.append(Spacer(1, 0.2 * cm))
 
     if scenario and not matching_timestamps:
         story.append(
@@ -570,22 +669,45 @@ def assemble_report(state: ReportState) -> ReportState:
                 body_style,
             )
         )
-    else:
-        for timestamp in matching_timestamps:
-            frame_bytes = state["frames"][timestamp]
-            description = state["descriptions"].get(timestamp, "No description available.")
+        story.append(Spacer(1, 0.3 * cm))
 
-            moment_block = [
-                Paragraph(f"At {timestamp:.0f}s", moment_heading_style),
-                Spacer(1, 0.15 * cm),
-                Image(io.BytesIO(frame_bytes), width=image_width, height=image_height),
-                Spacer(1, 0.15 * cm),
-                Paragraph(description, body_style),
-                Spacer(1, 0.4 * cm),
-            ]
-            # Keeps image+description together on one page instead of splitting
-            # across a page break mid-moment.
-            story.append(KeepTogether(moment_block))
+        # Show what was actually sampled, so a non-match stays verifiable
+        # instead of a bare claim — the reviewer can see exactly what each
+        # checked moment looked like and judge the "no match" for themselves.
+        story.append(Paragraph("Sampled moments", moment_heading_style))
+        story.append(Spacer(1, 0.2 * cm))
+
+        for timestamp in sorted(state["frames"]):
+            description = state["descriptions"].get(timestamp, "No description available.")
+            story.append(
+                _build_moment_block(
+                    timestamp,
+                    state["frames"][timestamp],
+                    description,
+                    image_width,
+                    image_height,
+                    moment_heading_style,
+                    body_style,
+                )
+            )
+    else:
+        # Once the scenario is confirmed true in this video, one representative
+        # frame is enough — showing every matching frame just repeats the same
+        # finding. The earliest match is used since it's the first moment the
+        # situation is established.
+        for timestamp in matching_timestamps[:1]:
+            description = state["descriptions"].get(timestamp, "No description available.")
+            story.append(
+                _build_moment_block(
+                    timestamp,
+                    state["frames"][timestamp],
+                    description,
+                    image_width,
+                    image_height,
+                    moment_heading_style,
+                    body_style,
+                )
+            )
 
     doc.build(story)
 
