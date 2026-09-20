@@ -1,6 +1,7 @@
 import json
 import shutil
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -19,7 +20,8 @@ router = APIRouter()
 TEMP_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "temp"
 TEMP_DATA_DIR.mkdir(parents=True, exist_ok=True)
 LATEST_ANALYSIS_JSON = TEMP_DATA_DIR / "roadvision_latest_analysis.json"
-
+PROCESSED_VIDEO_DIR = Path(__file__).resolve().parents[2] / "data" / "processed_videos"
+PROCESSED_VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/analyze/video")
 async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
@@ -62,6 +64,14 @@ async def analyze_video(file: UploadFile = File(...)):  # noqa: B008
                 status_code=200,
                 content={"status": "cancelled"},
             )
+
+        # Persist a permanent copy of the processed video (only for
+        # successful, non-cancelled runs — the temp dir above does not
+        # survive a restart and was never meant to be the source of truth).
+        timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
+        stored_video_path = PROCESSED_VIDEO_DIR / f"{timestamp}_{file.filename}"
+        shutil.copy2(output_path, stored_video_path)
+
 
         # Keep the existing MVP-1 video response unchanged
         return FileResponse(
